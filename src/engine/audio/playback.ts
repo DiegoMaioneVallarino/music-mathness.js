@@ -12,7 +12,8 @@ import type {
 
 import type {
     StepPattern,
-    PianoPattern
+    PianoPattern,
+    CyclePattern
 } from "../patterns/types"
 
 
@@ -20,6 +21,9 @@ import type {
     TimelineTrack
 } from "../timeline/types"
 
+import {
+    getCycleEventTimes
+} from "../patterns/cycle"
 
 
 let playbackTimer: number | null = null
@@ -151,10 +155,13 @@ function playMidiNote(
 }
 
 export function playTimelineLoop(
-    tracks: TimelineTrack[],
-    patterns: Pattern[],
+    getTracks:
+        () => TimelineTrack[],
+    getPatterns:
+        () => Pattern[],
     bpm: number,
-    samples: Sample[],
+    getSamples:
+        () => Sample[],
     onBeat?: (
         beat: number
     ) => void
@@ -194,6 +201,15 @@ export function playTimelineLoop(
 
 
     function playTimelineStep() {
+
+          const tracks =
+        getTracks()
+
+    const patterns =
+        getPatterns()
+
+    const samples =
+        getSamples()
 
         const globalBeat =
             timelineStep *
@@ -398,9 +414,260 @@ export function playTimelineLoop(
 
     playTimelineStep()
 }
+export function playCyclePatternLoop(
+    getPattern:
+        () =>
+            CyclePattern |
+            undefined,
+
+    bpm: number,
+
+    getSamples:
+        () => Sample[]
+) {
+
+    stopPattern()
+
+
+    /*
+        Beat en milisegundos.
+
+        Por ejemplo:
+
+        130 BPM
+
+        60000 / 130
+        ≈ 461.53ms
+    */
+
+    const beatDurationMs =
+        60000 / bpm
+
+
+    /*
+        Guardamos en qué punto
+        temporal del ciclo estamos.
+    */
+
+    let previousEventTime =
+        0
+
+
+    function scheduleCycle() {
+
+        const pattern =
+            getPattern()
+
+
+        if (!pattern) {
+            return
+        }
+
+
+        const samples =
+            getSamples()
+
+
+        /*
+            Construimos todos los eventos
+            geométricos del ciclo.
+        */
+
+        const events =
+            pattern.layers.flatMap(
+                layer => {
+
+                    const times =
+                        getCycleEventTimes(
+                            pattern.cycleBeats,
+                            layer.division,
+                            layer.phase
+                        )
+
+
+                    return times.map(
+                        time => ({
+                            time,
+                            layer
+                        })
+                    )
+                }
+            )
+
+
+        /*
+            Orden cronológico.
+
+            Ejemplo:
+
+            Kick /3
+            Snare /4
+
+            podría producir:
+
+            0
+            0
+            2
+            2.666...
+            4
+            5.333...
+            6
+        */
+
+        events.sort(
+            (a, b) =>
+                a.time -
+                b.time
+        )
+
+
+        if (
+            events.length === 0
+        ) {
+
+            playbackTimer =
+                window.setTimeout(
+                    scheduleCycle,
+                    pattern.cycleBeats *
+                        beatDurationMs
+                )
+
+            return
+        }
+
+
+        let eventIndex =
+            0
+
+
+        previousEventTime =
+            0
+
+
+        function playNextEvent() {
+
+            /*
+                Volvemos a consultar el pattern.
+
+                IMPORTANTE:
+                esto permite edición en caliente.
+            */
+
+            const currentPattern =
+                getPattern()
+
+
+            if (!currentPattern) {
+                return
+            }
+
+
+            /*
+                Cuando terminamos todos
+                los eventos, comenzamos
+                un ciclo nuevo.
+
+                Y volvemos a calcularlos,
+                por lo que division/phase
+                pueden haber cambiado.
+            */
+
+            if (
+                eventIndex >=
+                events.length
+            ) {
+
+                const remainingBeats =
+                    currentPattern.cycleBeats -
+                    previousEventTime
+
+
+                playbackTimer =
+                    window.setTimeout(
+
+                        scheduleCycle,
+
+                        remainingBeats *
+                            beatDurationMs
+                    )
+
+                return
+            }
+
+
+            const event =
+                events[eventIndex]
+
+
+            const delayBeats =
+                event.time -
+                previousEventTime
+
+
+            playbackTimer =
+                window.setTimeout(
+                    () => {
+
+                        /*
+                            Leemos los samples actuales.
+                        */
+
+                        const currentSamples =
+                            getSamples()
+
+
+                        if (
+                            event.layer.sampleId
+                        ) {
+
+                            const sample =
+                                currentSamples.find(
+                                    sample =>
+                                        sample.id ===
+                                        event.layer.sampleId
+                                )
+
+
+                            if (sample) {
+
+                                playSample(
+                                    sample.url
+                                )
+                            }
+                        }
+
+
+                        previousEventTime =
+                            event.time
+
+
+                        eventIndex++
+
+
+                        playNextEvent()
+                    },
+
+                    Math.max(
+                        0,
+                        delayBeats *
+                            beatDurationMs
+                    )
+                )
+        }
+
+
+        playNextEvent()
+    }
+
+
+    scheduleCycle()
+}
 
 export function playPianoPatternLoop(
-    pattern: PianoPattern,
+    getPattern:
+        () =>
+            PianoPattern |
+            undefined,
     bpm: number,
     onStep?: (
         stepIndex: number
@@ -410,22 +677,37 @@ export function playPianoPatternLoop(
     stopPattern()
 
 
-    const totalSteps =
-        pattern.bars *
-        (
-            4 /
-            pattern.resolution
-        )
-
-
-    const stepDuration =
-        getStepDurationMs(
-            bpm,
-            pattern.resolution
-        )
-
-
     function playCurrentStep() {
+
+        /*
+            Leemos el pattern ACTUAL,
+            no el pattern que existía
+            al pulsar PLAY.
+        */
+
+        const pattern =
+            getPattern()
+
+
+        if (!pattern) {
+            return
+        }
+
+
+        const totalSteps =
+            pattern.bars *
+            (
+                4 /
+                pattern.resolution
+            )
+
+
+        const stepDuration =
+            getStepDurationMs(
+                bpm,
+                pattern.resolution
+            )
+
 
         onStep?.(
             currentStep
@@ -445,7 +727,8 @@ export function playPianoPatternLoop(
                         (
                             stepDuration *
                             note.lengthSteps
-                        ) / 1000
+                        ) /
+                        1000
 
 
                     playMidiNote(
@@ -478,20 +761,22 @@ export function playPianoPatternLoop(
 }
 
 export function playPatternLoop(
-    pattern: StepPattern,
+    getPattern: () => StepPattern | undefined,
     bpm: number,
-    samples: Sample[],
-    onStep?: (stepIndex: number) => void
+    getSamples: () => Sample[],
+    onStep?: (
+        stepIndex: number
+    ) => void
 ) {
 
     stopPattern()
 
 
-    const totalSteps =
-        pattern.layers[0]?.steps.length ?? 0
+    const initialPattern =
+        getPattern()
 
 
-    if (totalSteps === 0) {
+    if (!initialPattern) {
         return
     }
 
@@ -499,22 +784,49 @@ export function playPatternLoop(
     const stepDuration =
         getStepDurationMs(
             bpm,
-            pattern.resolution
+            initialPattern.resolution
         )
 
 
     function playCurrentStep() {
+
+        const pattern =
+            getPattern()
+
+
+        if (!pattern) {
+            return
+        }
+
+
+        const totalSteps =
+            pattern.layers[0]
+                ?.steps.length ?? 0
+
+
+        if (
+            totalSteps === 0
+        ) {
+            return
+        }
+
 
         onStep?.(
             currentStep
         )
 
 
+        const samples =
+            getSamples()
+
+
         pattern.layers.forEach(
             layer => {
 
                 const isActive =
-                    layer.steps[currentStep] === 1
+                    layer.steps[
+                        currentStep
+                    ] === 1
 
 
                 if (
@@ -546,8 +858,10 @@ export function playPatternLoop(
 
 
         currentStep =
-            (currentStep + 1)
-            % totalSteps
+            (
+                currentStep + 1
+            ) %
+            totalSteps
 
 
         playbackTimer =

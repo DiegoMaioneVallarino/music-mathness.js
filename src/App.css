@@ -281,3 +281,41 @@ body {
 .transport button:hover {
     color: #b6d934;
 }
+
+
+.transport-time {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+
+    min-width: 150px;
+
+    padding: 7px 10px;
+
+    background: #080808;
+
+    border: 1px solid #333;
+
+    font-family: monospace;
+}
+
+
+.transport-time__current {
+    color: #b6d934;
+
+    font-size: 16px;
+
+    font-weight: 700;
+}
+
+
+.transport-time__separator {
+    color: #555;
+}
+
+
+.transport-time__total {
+    color: #777;
+
+    font-size: 11px;
+}

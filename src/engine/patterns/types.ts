@@ -69,4 +69,31 @@ export type PianoPattern = {
 
 export type Pattern =
     StepPattern |
-    PianoPattern
+    PianoPattern |
+    CyclePattern
+
+    export type CycleLayer = {
+    id: string
+
+    name: string
+
+    sampleId: string | null
+
+    division: number
+
+    phase: number
+}
+
+export type CyclePattern = {
+    id: string
+
+    type: "cycle"
+
+    name: string
+
+    color: string
+
+    cycleBeats: number
+
+    layers: CycleLayer[]
+}

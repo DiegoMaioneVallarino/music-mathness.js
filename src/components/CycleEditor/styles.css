@@ -1,0 +1,413 @@
+.cycle-editor {
+    width: 100%;
+
+    margin-top: 18px;
+
+    background: #101010;
+
+    border: 1px solid #333;
+
+    color: #ccc;
+}
+
+
+.cycle-editor__header {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 16px 18px;
+
+    border-bottom: 1px solid #333;
+
+    font-size: 13px;
+
+    letter-spacing: 1px;
+}
+
+
+.cycle-editor__content {
+    display: grid;
+
+    grid-template-columns:
+        260px
+        minmax(400px, 1fr);
+
+    min-height: 560px;
+}
+
+
+/*
+    SAMPLE / LAYERS
+*/
+
+.cycle-editor__layers {
+    padding: 14px;
+
+    background: #0c0c0c;
+
+    border-right: 1px solid #333;
+}
+
+
+.cycle-layer-control {
+    position: relative;
+
+    margin-bottom: 12px;
+
+    padding: 14px;
+
+    background: #151515;
+
+    border: 1px solid #292929;
+
+    transition:
+        border-color 120ms ease,
+        background 120ms ease;
+}
+
+
+.cycle-layer-control:hover {
+    background: #181818;
+
+    border-color: #444;
+}
+
+
+.cycle-layer-control__name {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    padding-bottom: 10px;
+
+    border-bottom: 1px solid #292929;
+
+    color: #a3e635;
+
+    font-size: 11px;
+
+    text-transform: uppercase;
+
+    overflow: hidden;
+
+    white-space: nowrap;
+
+    text-overflow: ellipsis;
+}
+
+
+.cycle-layer-control__sample-icon {
+    color: #666;
+}
+
+
+/*
+    DIVISION
+*/
+
+.division-control {
+    padding-top: 14px;
+}
+
+
+.division-control__label {
+    display: block;
+
+    margin-bottom: 3px;
+
+    color: #626262;
+
+    font-size: 9px;
+
+    letter-spacing: 1px;
+}
+
+
+.division-control__value {
+    position: relative;
+
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    height: 72px;
+}
+
+
+.division-control__number {
+    min-width: 80px;
+
+    text-align: center;
+
+    color: #ddd;
+
+    font-family: monospace;
+
+    font-size: 42px;
+
+    font-weight: 700;
+
+    line-height: 1;
+
+    user-select: none;
+}
+
+
+/*
+    Los botones existen,
+    pero normalmente están ocultos.
+*/
+
+.division-control__button {
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    width: 30px;
+    height: 30px;
+
+    padding: 0;
+
+    border: 1px solid #555;
+
+    border-radius: 50%;
+
+    background: #202020;
+
+    color: #bbb;
+
+    font-size: 20px;
+
+    line-height: 1;
+
+    cursor: pointer;
+
+    opacity: 0;
+
+    transform:
+        scale(0.8);
+
+    transition:
+        opacity 120ms ease,
+        transform 120ms ease,
+        background 120ms ease,
+        border-color 120ms ease;
+}
+
+
+/*
+    Solo aparecen cuando pasamos
+    el ratón por la sección de división.
+*/
+
+.division-control:hover
+.division-control__button {
+    opacity: 1;
+
+    transform:
+        scale(1);
+}
+
+
+.division-control__button:hover {
+    background: #2a2a2a;
+
+    border-color: #a3e635;
+
+    color: #a3e635;
+}
+
+
+.division-control__button:active {
+    transform:
+        scale(0.88);
+}
+
+
+.division-control__button--minus {
+    margin-right: 8px;
+}
+
+
+.division-control__button--plus {
+    margin-left: 8px;
+}
+
+
+/*
+    PHASE
+*/
+
+.phase-control {
+    margin-top: 4px;
+
+    padding-top: 10px;
+
+    border-top: 1px solid #292929;
+}
+
+
+.phase-control__header {
+    display: flex;
+
+    justify-content: space-between;
+
+    margin-bottom: 7px;
+
+    color: #666;
+
+    font-size: 9px;
+
+    letter-spacing: 1px;
+}
+
+
+.phase-control input[type="range"] {
+    width: 100%;
+
+    cursor: pointer;
+}
+
+
+/*
+    GEOMETRÍA
+*/
+
+.cycle-editor__visual {
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    min-width: 0;
+
+    padding: 24px;
+}
+
+
+.cycle-svg {
+    display: block;
+
+    width: min(
+        100%,
+        560px
+    );
+
+    aspect-ratio: 1;
+}
+
+
+.cycle-boundary {
+    fill: none;
+
+    stroke: #333;
+
+    stroke-width: 1;
+}
+
+
+.cycle-orbit {
+    fill: none;
+
+    stroke: #252525;
+
+    stroke-width: 1;
+
+    stroke-dasharray:
+        3 5;
+}
+
+
+.cycle-polygon {
+    fill: none;
+
+    stroke: #a3e635;
+
+    stroke-width: 2;
+}
+
+
+.cycle-event {
+    fill: #a3e635;
+
+    stroke: #111;
+
+    stroke-width: 2;
+}
+
+
+.cycle-center {
+    fill: #777;
+}
+
+
+.cycle-editor__empty {
+    padding: 30px 10px;
+
+    color: #444;
+
+    text-align: center;
+
+    font-size: 10px;
+
+    line-height: 1.8;
+
+    letter-spacing: 1px;
+}
+
+.cycle-playhead {
+    stroke: #ffffff;
+
+    stroke-width: 1.5;
+
+    opacity: 0.85;
+
+    pointer-events: none;
+}
+
+.cycle-hit-pulse {
+    fill: none;
+
+    stroke: #ffffff;
+
+    stroke-width: 2;
+
+    pointer-events: none;
+
+    transform-box:
+        fill-box;
+
+    transform-origin:
+        center;
+
+    animation:
+        cycle-hit-pulse-animation
+        420ms
+        ease-out
+        forwards;
+}
+
+
+@keyframes cycle-hit-pulse-animation {
+
+    0% {
+        opacity: 1;
+
+        transform:
+            scale(1);
+    }
+
+
+    100% {
+        opacity: 0;
+
+        transform:
+            scale(4);
+    }
+}

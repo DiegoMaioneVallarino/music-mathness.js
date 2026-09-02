@@ -1,6 +1,11 @@
 import {
+    useEffect,
+    useRef,
     useState
 } from "react"
+
+
+
 
 import PatternGrid from "./components/PatternGrid"
 import Timeline from "./components/Timeline"
@@ -24,6 +29,7 @@ import {
 import {
     playPatternLoop,
     playPianoPatternLoop,
+    playCyclePatternLoop,
     playTimelineLoop,
     stopPattern
 } from "./engine/audio/playback"
@@ -54,7 +60,17 @@ import {
     togglePianoNote
 } from "./engine/patterns/piano"
 
+import {
+    createCyclePattern
+} from "./engine/patterns/createCyclePattern"
 
+import CycleEditor from "./components/CycleEditor"
+
+import {
+    addCycleLayer,
+    setCycleLayerDivision,
+    setCycleLayerPhase
+} from "./engine/patterns/cycleLayer"
 
 import "./App.css"
 
@@ -131,6 +147,41 @@ function App() {
     )
 
 
+
+      const [
+          isPlaying,
+          setIsPlaying
+      ] = useState(false)
+
+
+      const [
+          playbackSeconds,
+          setPlaybackSeconds
+      ] = useState(0)
+
+
+      const [
+          playbackDurationSeconds,
+          setPlaybackDurationSeconds
+      ] = useState(0)
+
+const playbackStartRef =
+    useRef<number | null>(
+        null
+    )
+
+
+
+const playbackDurationRef =
+    useRef(0)
+      
+  const [
+      currentTimelineBeat,
+      setCurrentTimelineBeat
+  ] = useState<number | null>(
+      null
+)
+
     const [
         samples,
         setSamples
@@ -147,7 +198,11 @@ function App() {
       >(
           "pattern"
       )
-
+      const cycleProgress =
+    playbackDurationSeconds > 0
+        ? playbackSeconds /
+            playbackDurationSeconds
+        : 0
 
     const [
         timelineTracks,
@@ -174,6 +229,110 @@ function App() {
 
     ])
 
+          const patternsRef =
+        useRef(patterns)
+
+    patternsRef.current =
+        patterns
+
+
+    const timelineTracksRef =
+        useRef(timelineTracks)
+
+    timelineTracksRef.current =
+        timelineTracks
+
+
+    const samplesRef =
+        useRef(samples)
+
+    samplesRef.current =
+        samples
+
+        useEffect(() => {
+
+    if (!isPlaying) {
+        return
+    }
+
+
+    let animationFrame = 0
+
+
+    function updateClock(
+        now: number
+    ) {
+
+        if (
+            playbackStartRef.current ===
+            null
+        ) {
+            playbackStartRef.current =
+                now
+        }
+
+
+        const duration =
+            playbackDurationRef.current
+
+
+        if (
+            duration <= 0
+        ) {
+            return
+        }
+
+
+        const elapsed =
+            (
+                now -
+                playbackStartRef.current
+            ) /
+            1000
+
+
+        /*
+            El módulo hace que:
+
+            0 → duración
+            duración → 0
+            0 → duración
+            ...
+
+            exactamente igual que nuestro loop.
+        */
+
+        const loopTime =
+            elapsed %
+            duration
+
+
+        setPlaybackSeconds(
+            loopTime
+        )
+
+
+        animationFrame =
+            requestAnimationFrame(
+                updateClock
+            )
+    }
+
+
+    animationFrame =
+        requestAnimationFrame(
+            updateClock
+        )
+
+
+    return () => {
+
+        cancelAnimationFrame(
+            animationFrame
+        )
+    }
+
+}, [isPlaying])
 
     const selectedPattern =
         patterns.find(
@@ -193,29 +352,30 @@ function App() {
     */
 
     function handleAddSampleToPattern(
-        sampleId: string,
-        sampleName: string
-    ) {
+    sampleId: string,
+    sampleName: string
+) {
 
-        setPatterns(
-            currentPatterns =>
-                currentPatterns.map(
-                    pattern => {
+    setPatterns(
+        currentPatterns =>
+            currentPatterns.map(
+                pattern => {
 
-                        if (
-                            pattern.id !==
-                            selectedPatternId
-                        ) {
-                            return pattern
-                        }
+                    if (
+                        pattern.id !==
+                        selectedPatternId
+                    ) {
+                        return pattern
+                    }
 
 
-                        if (
-                            pattern.type !== "step"
-                        ) {
-                            return pattern
-                        }
+                    /*
+                        STEP
+                    */
 
+                    if (
+                        pattern.type === "step"
+                    ) {
 
                         return addSampleLayer(
                             pattern,
@@ -223,9 +383,140 @@ function App() {
                             sampleId
                         )
                     }
-                )
-        )
-    }
+
+
+                    /*
+                        CYCLE
+                    */
+
+                    if (
+                        pattern.type === "cycle"
+                    ) {
+
+                        return addCycleLayer(
+                            pattern,
+                            sampleName,
+                            sampleId,
+                            4
+                        )
+                    }
+
+
+                    /*
+                        PianoPattern no utiliza
+                        samples todavía.
+                    */
+
+                    return pattern
+                }
+            )
+    )
+}
+function startPlaybackClock(
+    durationBeats: number
+) {
+
+    const beatSeconds =
+        60 / BPM
+
+
+    const durationSeconds =
+        durationBeats *
+        beatSeconds
+
+
+    playbackDurationRef.current =
+        durationSeconds
+
+
+    playbackStartRef.current =
+        performance.now()
+
+
+    setPlaybackDurationSeconds(
+        durationSeconds
+    )
+
+
+    setPlaybackSeconds(
+        0
+    )
+
+
+    setIsPlaying(
+        true
+    )
+}
+
+function handleCycleDivisionChange(
+    layerId: string,
+    division: number
+) {
+
+    setPatterns(
+        currentPatterns =>
+            currentPatterns.map(
+                pattern => {
+
+                    if (
+                        pattern.id !==
+                        selectedPatternId
+                    ) {
+                        return pattern
+                    }
+
+
+                    if (
+                        pattern.type !== "cycle"
+                    ) {
+                        return pattern
+                    }
+
+
+                    return setCycleLayerDivision(
+                        pattern,
+                        layerId,
+                        division
+                    )
+                }
+            )
+    )
+}
+
+function handleCyclePhaseChange(
+    layerId: string,
+    phase: number
+) {
+
+    setPatterns(
+        currentPatterns =>
+            currentPatterns.map(
+                pattern => {
+
+                    if (
+                        pattern.id !==
+                        selectedPatternId
+                    ) {
+                        return pattern
+                    }
+
+
+                    if (
+                        pattern.type !== "cycle"
+                    ) {
+                        return pattern
+                    }
+
+
+                    return setCycleLayerPhase(
+                        pattern,
+                        layerId,
+                        phase
+                    )
+                }
+            )
+    )
+}
 
 
     /*
@@ -322,6 +613,31 @@ function handleTogglePianoNote(
 
         Solo funciona en StepPattern.
     */
+      function handleCreateCyclePattern() {
+
+          const cyclePattern =
+              createCyclePattern(
+                  `Cycle ${patterns.length + 1}`,
+                  "#f59e0b",
+                  8
+              )
+
+
+          setPatterns(
+              currentPatterns => [
+                  ...currentPatterns,
+                  cyclePattern
+              ]
+          )
+
+
+          setSelectedPatternId(
+              cyclePattern.id
+          )
+
+
+          handleStop()
+      }
 
     function handleToggleStep(
         layerId: string,
@@ -443,7 +759,9 @@ function handleTogglePianoNote(
         */
 
         const lengthBeats =
-            selectedPattern.bars * 4
+    selectedPattern.type === "cycle"
+        ? selectedPattern.cycleBeats
+        : selectedPattern.bars * 4
 
 
         setTimelineTracks(
@@ -480,21 +798,33 @@ function handleTogglePianoNote(
         su propio sintetizador / instrumento.
     */
 
-    function handlePlay() {
+function handlePlay() {
 
     /*
-        MODO TIMELINE
+        TIMELINE
     */
 
     if (
         playbackMode === "timeline"
     ) {
+          startPlaybackClock(
+              32
+          )
 
         playTimelineLoop(
-            timelineTracks,
-            patterns,
+
+            () =>
+                timelineTracksRef.current,
+
+            () =>
+                patternsRef.current,
+
             BPM,
-            samples
+
+            () =>
+                samplesRef.current,
+
+            setCurrentTimelineBeat
         )
 
         return
@@ -502,7 +832,7 @@ function handleTogglePianoNote(
 
 
     /*
-        MODO PATTERN
+        PATTERN
     */
 
     if (!selectedPattern) {
@@ -510,41 +840,203 @@ function handleTogglePianoNote(
     }
 
 
+    /*
+        STEP PATTERN
+    */
+
     if (
         selectedPattern.type === "step"
     ) {
 
+         const patternId =
+        selectedPattern.id
+
+
+    startPlaybackClock(
+        selectedPattern.bars * 4
+    )
+
+
         playPatternLoop(
-            selectedPattern,
+
+            () => {
+
+                const pattern =
+                    patternsRef.current.find(
+                        pattern =>
+                            pattern.id ===
+                            patternId
+                    )
+
+
+                if (
+                    !pattern ||
+                    pattern.type !== "step"
+                ) {
+                    return undefined
+                }
+
+
+                return pattern
+            },
+
             BPM,
-            samples,
+
+            () =>
+                samplesRef.current,
+
             setCurrentStep
         )
+
 
         return
     }
 
 
-    if (
-        selectedPattern.type === "piano"
-    ) {
+    /*
+        PIANO PATTERN
+    */
 
-        playPianoPatternLoop(
-            selectedPattern,
-            BPM,
-            setCurrentStep
-        )
-    }
+    if (
+    selectedPattern.type === "piano"
+) {
+
+    const patternId =
+        selectedPattern.id
+
+    startPlaybackClock(
+        selectedPattern.bars * 4
+    )
+
+    playPianoPatternLoop(
+
+        () => {
+
+            const pattern =
+                patternsRef.current.find(
+                    pattern =>
+                        pattern.id ===
+                        patternId
+                )
+
+
+            if (
+                !pattern ||
+                pattern.type !== "piano"
+            ) {
+                return undefined
+            }
+
+
+            return pattern
+        },
+
+        BPM,
+
+        setCurrentStep
+    )
+
+
+    return
 }
 
 
-    function handleStop() {
+if (
+    selectedPattern.type === "cycle"
+) {
 
-        stopPattern()
+    const patternId =
+        selectedPattern.id
 
-        setCurrentStep(null)
-    }
+        startPlaybackClock(
+        selectedPattern.cycleBeats
+    )
 
+    playCyclePatternLoop(
+
+        () => {
+
+            const pattern =
+                patternsRef.current.find(
+                    pattern =>
+                        pattern.id ===
+                        patternId
+                )
+
+
+            if (
+                !pattern ||
+                pattern.type !== "cycle"
+            ) {
+                return undefined
+            }
+
+
+            return pattern
+        },
+
+        BPM,
+
+        () =>
+            samplesRef.current
+    )
+}
+}
+
+
+ function handleStop() {
+
+    stopPattern()
+
+
+    setCurrentStep(
+        null
+    )
+
+
+    setCurrentTimelineBeat(
+        null
+    )
+
+
+    setIsPlaying(
+        false
+    )
+
+
+    setPlaybackSeconds(
+        0
+    )
+
+
+    playbackStartRef.current =
+        null
+}
+function formatPlaybackTime(
+    seconds: number
+): string {
+
+    const minutes =
+        Math.floor(
+            seconds / 60
+        )
+
+
+    const remainingSeconds =
+        seconds % 60
+
+
+    return (
+        `${minutes
+            .toString()
+            .padStart(2, "0")
+        }:${
+            remainingSeconds
+                .toFixed(2)
+                .padStart(5, "0")
+        }`
+    )
+}
 
     return (
 
@@ -591,6 +1083,15 @@ function handleTogglePianoNote(
                         + NEW PIANO
                     </button>
 
+                    <button
+                    className="new-pattern-button"
+                    onClick={
+                        handleCreateCyclePattern
+                    }
+                >
+                    + NEW CYCLE
+                </button>
+
 
                     <div className="pattern-library">
 
@@ -630,17 +1131,15 @@ function handleTogglePianoNote(
 
 
                                     <small>
+                                            {
+                                                pattern.type === "step"
+                                                    ? " STEP"
 
-                                        {
-                                            pattern.type ===
-                                            "piano"
-
-                                                ? " PIANO"
-
-                                                : " STEP"
-                                        }
-
-                                    </small>
+                                                    : pattern.type === "piano"
+                                                        ? " PIANO"
+                                                        : " CYCLE"
+                                            }
+                                        </small>
 
                                 </button>
 
@@ -743,7 +1242,35 @@ function handleTogglePianoNote(
                         BPM {BPM}
                     </div>
 
+                  <div className="transport-time">
 
+                      <span className="transport-time__current">
+
+                          {
+                              formatPlaybackTime(
+                                  playbackSeconds
+                              )
+                          }
+
+                      </span>
+
+
+                      <span className="transport-time__separator">
+                          /
+                      </span>
+
+
+                      <span className="transport-time__total">
+
+                          {
+                              formatPlaybackTime(
+                                  playbackDurationSeconds
+                              )
+                          }
+
+                      </span>
+
+                  </div>
                     <button
                         onClick={
                             handlePlay
@@ -791,76 +1318,110 @@ function handleTogglePianoNote(
                 {/* PATTERN EDITOR */}
 
                 {
-                    selectedPattern ? (
+    selectedPattern ? (
 
-                        selectedPattern.type ===
-                        "step"
+        selectedPattern.type === "step"
 
-                            ? (
+            ? (
 
-                                <PatternGrid
+                <PatternGrid
+                    pattern={
+                        selectedPattern
+                    }
 
-                                    pattern={
-                                        selectedPattern
-                                    }
+                    onToggleStep={
+                        handleToggleStep
+                    }
 
-                                    onToggleStep={
-                                        handleToggleStep
-                                    }
+                    currentStep={
+                        currentStep
+                    }
+                />
 
-                                    currentStep={
-                                        currentStep
-                                    }
+            )
 
-                                />
+            : selectedPattern.type === "piano"
 
-                            )
+                ? (
 
-                            : (
+                    <PianoRoll
+                        pattern={
+                            selectedPattern
+                        }
 
-                                <PianoRoll
-                            pattern={
-                                selectedPattern
-                            }
+                        currentStep={
+                            currentStep
+                        }
 
-                            currentStep={
-                                currentStep
-                            }
+                        onToggleNote={
+                            handleTogglePianoNote
+                        }
+                    />
 
-                            onToggleNote={
-                                handleTogglePianoNote
-                            }
-                        />
+                )
 
-                            )
+                : (
 
-                    ) : (
+                    <CycleEditor
+                          pattern={
+                              selectedPattern
+                          }
 
-                        <p>
-                            No pattern selected
-                        </p>
+                          playbackProgress={
+                              playbackMode === "pattern" &&
+                              selectedPattern.type === "cycle"
 
-                    )
-                }
+                                  ? cycleProgress
+                                  : 0
+                          }
+
+                          isPlaying={
+                              isPlaying &&
+                              playbackMode === "pattern"
+                          }
+
+                          onDivisionChange={
+                              handleCycleDivisionChange
+                          }
+
+                          onPhaseChange={
+                              handleCyclePhaseChange
+                          }
+                      />
+
+                )
+
+    ) : (
+
+        <p>
+            No pattern selected
+        </p>
+
+    )
+}
 
 
                 {/* TIMELINE */}
 
                 <Timeline
 
-                    tracks={
-                        timelineTracks
-                    }
+              tracks={
+                  timelineTracks
+              }
 
-                    patterns={
-                        patterns
-                    }
+              patterns={
+                  patterns
+              }
 
-                    onPlacePattern={
-                        handlePlacePattern
-                    }
+              currentBeat={
+                  currentTimelineBeat
+              }
 
-                />
+              onPlacePattern={
+                  handlePlacePattern
+              }
+
+          />
 
 
             </section>

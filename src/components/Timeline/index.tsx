@@ -15,6 +15,10 @@ type TimelineProps = {
 
     patterns: Pattern[]
 
+    currentBeat:
+        number |
+        null
+
     onPlacePattern: (
         trackId: string,
         startBeat: number
@@ -25,6 +29,7 @@ type TimelineProps = {
 export default function Timeline({
     tracks,
     patterns,
+    currentBeat,
     onPlacePattern
 }: TimelineProps) {
 
@@ -134,8 +139,24 @@ export default function Timeline({
 
                                         </div>
                                     )
+                                    
                                 }
+
+                                
                             )}
+
+                         {currentBeat !== null && (
+
+                        <div
+                            className="timeline-playhead"
+
+                            style={{
+                                left:
+                                    `${currentBeat * 25}px`
+                            }}
+                        />
+
+                    )}
 
                         </div>
 

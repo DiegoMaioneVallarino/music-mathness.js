@@ -111,7 +111,35 @@
 
     border: 1px solid #555;
 }
+.timeline-playhead {
+    position: absolute;
 
+    top: 0;
+    bottom: 0;
+
+    width: 2px;
+
+    background: #ffffff;
+
+    pointer-events: none;
+
+    z-index: 20;
+}
+
+
+.timeline-playhead::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: -4px;
+
+    width: 10px;
+    height: 10px;
+
+    background: #ffffff;
+}
 
 .timeline-clip--step {
     background: #64751c;
