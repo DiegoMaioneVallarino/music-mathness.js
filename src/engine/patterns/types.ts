@@ -70,7 +70,8 @@ export type PianoPattern = {
 export type Pattern =
     StepPattern |
     PianoPattern |
-    CyclePattern
+    CyclePattern |
+    TonalCyclePattern
 
     export type CycleLayer = {
     id: string
@@ -96,4 +97,81 @@ export type CyclePattern = {
     cycleBeats: number
 
     layers: CycleLayer[]
+}
+
+export type TonalTraversalMode =
+    "divide" |
+    "step"
+
+
+export type TonalCyclePattern = {
+
+    id: string
+
+    type:
+        "tonal-cycle"
+
+    name: string
+
+    color: string
+
+
+    /*
+        Por ahora:
+        C4 = 60
+    */
+
+    rootMidi: number
+
+
+    /*
+        Major:
+
+        C D E F G A B
+        0 2 4 5 7 9 11
+    */
+
+    scaleIntervals:
+        number[]
+
+
+    /*
+        1 → 12 puntos
+        2 → 24
+        3 → 36
+        ...
+    */
+
+    octaveSpan: number
+
+
+    traversalMode:
+        TonalTraversalMode
+
+
+    /*
+        DIVIDE:
+        cantidad de partes
+
+        STEP:
+        tamaño del salto
+    */
+
+    amount:
+        number
+
+
+    /*
+        Rotación discreta
+        en posiciones tonales.
+    */
+
+    rotation:
+        number
+
+
+    cycleBeats:
+        number
+
+    gate: number
 }

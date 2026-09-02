@@ -30,6 +30,7 @@ import {
     playPatternLoop,
     playPianoPatternLoop,
     playCyclePatternLoop,
+    playTonalCyclePatternLoop,
     playTimelineLoop,
     stopPattern
 } from "./engine/audio/playback"
@@ -74,6 +75,13 @@ import {
 
 import "./App.css"
 
+
+import {
+    createTonalCyclePattern
+} from "./engine/patterns/createTonalCyclePattern"
+
+
+import TonalCycleEditor from "./components/TonalCycleEditor"
 
 const BPM = 130
 
@@ -759,8 +767,11 @@ function handleTogglePianoNote(
         */
 
         const lengthBeats =
-    selectedPattern.type === "cycle"
+    selectedPattern.type === "cycle" ||
+    selectedPattern.type === "tonal-cycle"
+
         ? selectedPattern.cycleBeats
+
         : selectedPattern.bars * 4
 
 
@@ -797,6 +808,248 @@ function handleTogglePianoNote(
         El PianoPattern tendrá después
         su propio sintetizador / instrumento.
     */
+function handleTonalModeChange(
+    mode:
+        "divide" |
+        "step"
+) {
+
+    setPatterns(
+        currentPatterns =>
+            currentPatterns.map(
+                pattern => {
+
+                    if (
+                        pattern.id !==
+                        selectedPatternId
+                    ) {
+                        return pattern
+                    }
+
+                    if (
+                        pattern.type !==
+                        "tonal-cycle"
+                    ) {
+                        return pattern
+                    }
+
+                    return {
+                        ...pattern,
+                        traversalMode:
+                            mode
+                    }
+                }
+            )
+    )
+}
+function handleTonalAmountChange(
+    amount: number
+) {
+
+    setPatterns(
+        currentPatterns =>
+            currentPatterns.map(
+                pattern => {
+
+                    if (
+                        pattern.id !==
+                        selectedPatternId
+                    ) {
+                        return pattern
+                    }
+
+                    if (
+                        pattern.type !==
+                        "tonal-cycle"
+                    ) {
+                        return pattern
+                    }
+
+                    return {
+                        ...pattern,
+
+                        amount:
+                            Math.max(
+                                1,
+                                Math.round(
+                                    amount
+                                )
+                            )
+                    }
+                }
+            )
+    )
+}
+function handleTonalOctaveSpanChange(
+    octaveSpan: number
+) {
+
+    setPatterns(
+        currentPatterns =>
+            currentPatterns.map(
+                pattern => {
+
+                    if (
+                        pattern.id !==
+                        selectedPatternId
+                    ) {
+                        return pattern
+                    }
+
+
+                    if (
+                        pattern.type !==
+                        "tonal-cycle"
+                    ) {
+                        return pattern
+                    }
+
+
+                    return {
+                        ...pattern,
+
+                        octaveSpan:
+                            Math.max(
+                                1,
+                                Math.round(
+                                    octaveSpan
+                                )
+                            ),
+
+                        /*
+                            Reset prudente porque
+                            ha cambiado el espacio
+                            modular completo.
+                        */
+
+                        rotation: 0
+                    }
+                }
+            )
+    )
+}
+function handleTonalRotationChange(
+    rotation: number
+) {
+
+    setPatterns(
+        currentPatterns =>
+            currentPatterns.map(
+                pattern => {
+
+                    if (
+                        pattern.id !==
+                        selectedPatternId
+                    ) {
+                        return pattern
+                    }
+
+                    if (
+                        pattern.type !==
+                        "tonal-cycle"
+                    ) {
+                        return pattern
+                    }
+
+
+                    const totalPositions =
+                        pattern.scaleIntervals.length *
+                        2 *
+                        pattern.octaveSpan
+
+
+                    const normalizedRotation =
+                        (
+                            (
+                                rotation %
+                                totalPositions
+                            ) +
+                            totalPositions
+                        ) %
+                        totalPositions
+
+
+                    return {
+                        ...pattern,
+                        rotation:
+                            normalizedRotation
+                    }
+                }
+            )
+    )
+}
+
+function handleTonalRootChange(
+    rootMidi: number
+) {
+
+    setPatterns(
+        currentPatterns =>
+            currentPatterns.map(
+                pattern => {
+
+                    if (
+                        pattern.id !==
+                        selectedPatternId
+                    ) {
+                        return pattern
+                    }
+
+                    if (
+                        pattern.type !==
+                        "tonal-cycle"
+                    ) {
+                        return pattern
+                    }
+
+                    return {
+                        ...pattern,
+                        rootMidi
+                    }
+                }
+            )
+    )
+}
+
+function handleTonalGateChange(
+    gate: number
+) {
+
+    setPatterns(
+        currentPatterns =>
+            currentPatterns.map(
+                pattern => {
+
+                    if (
+                        pattern.id !==
+                        selectedPatternId
+                    ) {
+                        return pattern
+                    }
+
+                    if (
+                        pattern.type !==
+                        "tonal-cycle"
+                    ) {
+                        return pattern
+                    }
+
+                    return {
+                        ...pattern,
+
+                        gate:
+                            Math.max(
+                                0.05,
+                                Math.min(
+                                    2,
+                                    gate
+                                )
+                            )
+                    }
+                }
+            )
+    )
+}
 
 function handlePlay() {
 
@@ -981,8 +1234,83 @@ if (
             samplesRef.current
     )
 }
+
+
+if (
+    selectedPattern.type ===
+    "tonal-cycle"
+) {
+
+    const patternId =
+        selectedPattern.id
+
+
+    startPlaybackClock(
+        selectedPattern.cycleBeats
+    )
+
+
+    playTonalCyclePatternLoop(
+
+        () => {
+
+            const pattern =
+                patternsRef.current.find(
+                    pattern =>
+                        pattern.id ===
+                        patternId
+                )
+
+
+            if (
+                !pattern ||
+                pattern.type !==
+                    "tonal-cycle"
+            ) {
+
+                return undefined
+            }
+
+
+            return pattern
+        },
+
+        BPM
+    )
+
+
+    return
 }
 
+
+}
+
+function handleCreateTonalCyclePattern() {
+
+    const pattern =
+        createTonalCyclePattern(
+            `Tonal Cycle ${patterns.length + 1}`,
+            "#e879f9",
+            60,
+            8
+        )
+
+
+    setPatterns(
+        currentPatterns => [
+            ...currentPatterns,
+            pattern
+        ]
+    )
+
+
+    setSelectedPatternId(
+        pattern.id
+    )
+
+
+    handleStop()
+}
 
  function handleStop() {
 
@@ -1092,6 +1420,15 @@ function formatPlaybackTime(
                     + NEW CYCLE
                 </button>
 
+                <button
+                className="new-pattern-button"
+                onClick={
+                    handleCreateTonalCyclePattern
+                }
+            >
+                + NEW TONAL CYCLE
+            </button>
+
 
                     <div className="pattern-library">
 
@@ -1133,11 +1470,15 @@ function formatPlaybackTime(
                                     <small>
                                             {
                                                 pattern.type === "step"
-                                                    ? " STEP"
+                                          ? "STEP"
 
-                                                    : pattern.type === "piano"
-                                                        ? " PIANO"
-                                                        : " CYCLE"
+                                          : pattern.type === "piano"
+                                              ? "PIANO"
+
+                                              : pattern.type === "cycle"
+                                                  ? "CYCLE"
+
+                                                  : "TONAL"
                                             }
                                         </small>
 
@@ -1329,12 +1670,12 @@ function formatPlaybackTime(
                         selectedPattern
                     }
 
-                    onToggleStep={
-                        handleToggleStep
-                    }
-
                     currentStep={
                         currentStep
+                    }
+
+                    onToggleStep={
+                        handleToggleStep
                     }
                 />
 
@@ -1360,36 +1701,89 @@ function formatPlaybackTime(
 
                 )
 
-                : (
+                : selectedPattern.type === "cycle"
 
-                    <CycleEditor
-                          pattern={
-                              selectedPattern
-                          }
+                    ? (
 
-                          playbackProgress={
-                              playbackMode === "pattern" &&
-                              selectedPattern.type === "cycle"
+                        <CycleEditor
+                            pattern={
+                                selectedPattern
+                            }
 
-                                  ? cycleProgress
-                                  : 0
-                          }
+                            playbackProgress={
+                                playbackMode === "pattern" &&
+                                playbackDurationSeconds > 0
 
-                          isPlaying={
-                              isPlaying &&
-                              playbackMode === "pattern"
-                          }
+                                    ? playbackSeconds /
+                                        playbackDurationSeconds
 
-                          onDivisionChange={
-                              handleCycleDivisionChange
-                          }
+                                    : 0
+                            }
 
-                          onPhaseChange={
-                              handleCyclePhaseChange
-                          }
-                      />
+                            isPlaying={
+                                isPlaying &&
+                                playbackMode === "pattern"
+                            }
 
-                )
+                            onDivisionChange={
+                                handleCycleDivisionChange
+                            }
+
+                            onPhaseChange={
+                                handleCyclePhaseChange
+                            }
+                        />
+
+                    )
+
+                    : (
+
+                     <TonalCycleEditor
+    pattern={
+        selectedPattern
+    }
+
+    playbackProgress={
+        playbackMode === "pattern" &&
+        playbackDurationSeconds > 0
+
+            ? playbackSeconds /
+                playbackDurationSeconds
+
+            : 0
+    }
+
+    isPlaying={
+        isPlaying &&
+        playbackMode === "pattern"
+    }
+
+    onModeChange={
+        handleTonalModeChange
+    }
+
+    onAmountChange={
+        handleTonalAmountChange
+    }
+
+    onRotationChange={
+        handleTonalRotationChange
+    }
+
+    onRootChange={
+        handleTonalRootChange
+    }
+
+    onGateChange={
+        handleTonalGateChange
+    }
+
+    onOctaveSpanChange={
+        handleTonalOctaveSpanChange
+    }
+/>
+
+                    )
 
     ) : (
 

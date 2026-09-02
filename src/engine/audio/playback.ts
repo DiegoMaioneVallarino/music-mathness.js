@@ -13,7 +13,8 @@ import type {
 import type {
     StepPattern,
     PianoPattern,
-    CyclePattern
+    CyclePattern,
+    TonalCyclePattern
 } from "../patterns/types"
 
 
@@ -25,6 +26,10 @@ import {
     getCycleEventTimes
 } from "../patterns/cycle"
 
+import {
+    createTonalCyclePositions,
+    getTonalTraversal
+} from "../music/tonalCycles/tonalCycle"
 
 let playbackTimer: number | null = null
 
@@ -657,6 +662,213 @@ export function playCyclePatternLoop(
 
 
         playNextEvent()
+    }
+
+
+    scheduleCycle()
+}
+
+export function playTonalCyclePatternLoop(
+    getPattern:
+        () =>
+            TonalCyclePattern |
+            undefined,
+
+    bpm: number
+) {
+
+    stopPattern()
+
+
+    const beatDurationMs =
+        60000 / bpm
+
+
+    function scheduleCycle() {
+
+        const pattern =
+            getPattern()
+
+
+        if (!pattern) {
+            return
+        }
+
+
+        /*
+            C major:
+
+            0 1 2 3 4 5 6 5 4 3 2 1
+
+            con repetitions = 1
+        */
+
+        const tonalPositions =
+    createTonalCyclePositions(
+        pattern.scaleIntervals.length,
+        pattern.octaveSpan
+    )
+
+const totalPositions =
+    tonalPositions.length
+
+
+        /*
+            Ejemplo:
+
+            DIVIDE 4:
+            [0, 3, 6, 9]
+
+            STEP 4:
+            [0, 4, 8]
+        */
+
+        const traversal =
+            getTonalTraversal(
+                pattern.traversalMode,
+                totalPositions,
+                pattern.amount,
+                pattern.rotation
+            )
+
+
+        if (
+            traversal.length === 0
+        ) {
+
+            playbackTimer =
+                window.setTimeout(
+                    scheduleCycle,
+                    pattern.cycleBeats *
+                        beatDurationMs
+                )
+
+            return
+        }
+
+
+        /*
+            Distribuimos los vértices
+            uniformemente en el ciclo.
+        */
+
+        const spacingBeats =
+            pattern.cycleBeats /
+            traversal.length
+
+
+        /*
+            Dejamos un poquito de espacio
+            entre notas para que se distinga
+            la secuencia.
+        */
+
+
+
+        let eventIndex =
+            0
+
+
+        function playNextNote() {
+
+    const currentPattern =
+        getPattern()
+
+
+    if (!currentPattern) {
+        return
+    }
+
+
+    const noteDurationSeconds =
+        (
+            spacingBeats *
+            60 /
+            bpm
+        ) *
+        currentPattern.gate
+
+
+    if (
+        eventIndex >=
+        traversal.length
+    ) {
+
+        playbackTimer =
+            window.setTimeout(
+                scheduleCycle,
+                spacingBeats *
+                    beatDurationMs
+            )
+
+        return
+    }
+
+
+   const positionIndex =
+    traversal[
+        eventIndex
+    ]
+
+const position =
+    tonalPositions[
+        positionIndex
+    ]
+
+    if (!position) {
+    eventIndex++
+    playNextNote()
+    return
+}
+
+const interval =
+    currentPattern.scaleIntervals[
+        position.degree
+    ]
+
+const midi =
+    currentPattern.rootMidi +
+    interval +
+    position.octaveOffset *
+        12
+
+playMidiNote(
+    midi,
+    noteDurationSeconds,
+    100
+)
+
+eventIndex++
+
+    eventIndex++
+
+
+    if (
+        eventIndex >=
+        traversal.length
+    ) {
+
+        playbackTimer =
+            window.setTimeout(
+                scheduleCycle,
+                spacingBeats *
+                    beatDurationMs
+            )
+
+        return
+    }
+
+
+    playbackTimer =
+        window.setTimeout(
+            playNextNote,
+            spacingBeats *
+                beatDurationMs
+        )
+}
+
+
+        playNextNote()
     }
 
 
