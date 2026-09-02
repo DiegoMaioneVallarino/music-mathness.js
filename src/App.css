@@ -60,7 +60,30 @@ body {
 
     color: #777;
 }
+.playback-mode-button {
+    min-width: 140px;
 
+    border:
+        1px solid #444;
+
+    background:
+        #171717;
+
+    color:
+        #b6d934;
+
+    padding:
+        8px 12px;
+
+    cursor:
+        pointer;
+}
+
+
+.playback-mode-button:hover {
+    background:
+        #222;
+}
 
 .new-pattern-button {
 

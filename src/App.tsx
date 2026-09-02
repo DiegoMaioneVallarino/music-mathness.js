@@ -23,6 +23,8 @@ import {
 
 import {
     playPatternLoop,
+    playPianoPatternLoop,
+    playTimelineLoop,
     stopPattern
 } from "./engine/audio/playback"
 
@@ -45,6 +47,14 @@ import type {
 import {
     placePattern
 } from "./engine/timeline/placement"
+
+import PianoRoll from "./components/PianoRoll"
+
+import {
+    togglePianoNote
+} from "./engine/patterns/piano"
+
+
 
 import "./App.css"
 
@@ -127,6 +137,16 @@ function App() {
     ] = useState<Sample[]>(
         DEFAULT_SAMPLES
     )
+
+      const [
+          playbackMode,
+          setPlaybackMode
+      ] = useState<
+          "pattern" |
+          "timeline"
+      >(
+          "pattern"
+      )
 
 
     const [
@@ -212,7 +232,41 @@ function App() {
         Importar archivos de audio
         desde la computadora.
     */
+function handleTogglePianoNote(
+    midi: number,
+    startStep: number
+) {
 
+    setPatterns(
+        currentPatterns =>
+            currentPatterns.map(
+                pattern => {
+
+                    if (
+                        pattern.id !==
+                        selectedPatternId
+                    ) {
+                        return pattern
+                    }
+
+
+                    if (
+                        pattern.type !==
+                        "piano"
+                    ) {
+                        return pattern
+                    }
+
+
+                    return togglePianoNote(
+                        pattern,
+                        midi,
+                        startStep
+                    )
+                }
+            )
+    )
+}
     function handleImportSample(
         event:
             React.ChangeEvent<HTMLInputElement>
@@ -428,17 +482,37 @@ function App() {
 
     function handlePlay() {
 
-        if (!selectedPattern) {
-            return
-        }
+    /*
+        MODO TIMELINE
+    */
+
+    if (
+        playbackMode === "timeline"
+    ) {
+
+        playTimelineLoop(
+            timelineTracks,
+            patterns,
+            BPM,
+            samples
+        )
+
+        return
+    }
 
 
-        if (
-            selectedPattern.type !== "step"
-        ) {
-            return
-        }
+    /*
+        MODO PATTERN
+    */
 
+    if (!selectedPattern) {
+        return
+    }
+
+
+    if (
+        selectedPattern.type === "step"
+    ) {
 
         playPatternLoop(
             selectedPattern,
@@ -446,7 +520,22 @@ function App() {
             samples,
             setCurrentStep
         )
+
+        return
     }
+
+
+    if (
+        selectedPattern.type === "piano"
+    ) {
+
+        playPianoPatternLoop(
+            selectedPattern,
+            BPM,
+            setCurrentStep
+        )
+    }
+}
 
 
     function handleStop() {
@@ -671,7 +760,30 @@ function App() {
                     >
                         ■ STOP
                     </button>
+                    <button
+                        className="playback-mode-button"
 
+                        onClick={() => {
+
+                            handleStop()
+
+                            setPlaybackMode(
+                                current =>
+                                    current === "pattern"
+                                        ? "timeline"
+                                        : "pattern"
+                            )
+                        }}
+                    >
+
+                        MODE:
+                        {
+                            playbackMode === "pattern"
+                                ? " PATTERN"
+                                : " TIMELINE"
+                        }
+
+                    </button>
 
                 </header>
 
@@ -706,23 +818,19 @@ function App() {
 
                             : (
 
-                                <section className="piano-placeholder">
+                                <PianoRoll
+                            pattern={
+                                selectedPattern
+                            }
 
-                                    <h3>
-                                        {
-                                            selectedPattern.name
-                                        }
-                                    </h3>
+                            currentStep={
+                                currentStep
+                            }
 
-                                    <p>
-                                        Piano Roll
-                                    </p>
-
-                                    <p>
-                                        🎹 próximamente
-                                    </p>
-
-                                </section>
+                            onToggleNote={
+                                handleTogglePianoNote
+                            }
+                        />
 
                             )
 
