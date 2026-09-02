@@ -1,0 +1,25 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    margin: 0;
+    padding: 0;
+
+    width: 100%;
+    min-width: 100%;
+
+    min-height: 100vh;
+}
+
+body {
+    background: #090909;
+    overflow-x: hidden;
+}
+
+button,
+input {
+    font: inherit;
+}

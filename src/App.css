@@ -1,0 +1,260 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #090909;
+    color: #d4d4d4;
+    font-family: monospace;
+}
+
+
+.app {
+    display: grid;
+
+    grid-template-columns:
+        270px
+        minmax(0, 1fr);
+
+    width: 100%;
+    min-height: 100vh;
+}
+
+
+.leftbar {
+
+    background: #111;
+
+    border-right:
+        1px solid #333;
+
+    padding: 16px;
+
+    min-height: 100vh;
+}
+
+
+.leftbar h2 {
+
+    margin-top: 0;
+
+    color: #b6d934;
+
+    font-size: 18px;
+}
+
+
+.leftbar-section {
+    margin-top: 30px;
+}
+
+
+.leftbar-title {
+
+    margin-bottom: 10px;
+
+    font-size: 11px;
+
+    letter-spacing: 1px;
+
+    color: #777;
+}
+
+
+.new-pattern-button {
+
+    width: 100%;
+
+    padding: 8px;
+
+    background: #181818;
+
+    color: #b6d934;
+
+    border: 1px solid #333;
+
+    cursor: pointer;
+
+    margin-bottom: 10px;
+}
+
+
+.pattern-library {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 4px;
+}
+
+
+.pattern-item {
+
+    text-align: left;
+
+    padding: 8px;
+
+    background: transparent;
+
+    border: 1px solid transparent;
+
+    color: #aaa;
+
+    cursor: pointer;
+}
+
+
+.pattern-item:hover {
+    background: #181818;
+}
+
+
+.pattern-item--active {
+
+    background: #202020;
+
+    color: #b6d934;
+
+    border-color: #444;
+}
+
+
+.file-library {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 3px;
+}
+
+
+.file-item {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 6px;
+
+    background: transparent;
+
+    border: none;
+
+    color: #888;
+
+    font-family: inherit;
+
+    font-size: 12px;
+
+    text-align: left;
+
+    cursor: pointer;
+}.import-sample-button {
+
+    display: block;
+
+    width: 100%;
+
+    padding: 8px;
+
+    margin-bottom: 10px;
+
+    background: #181818;
+
+    border: 1px solid #333;
+
+    color: #b6d934;
+
+    font-size: 12px;
+
+    text-align: center;
+
+    cursor: pointer;
+}
+
+
+.import-sample-button:hover {
+    background: #202020;
+}
+
+
+.import-sample-button input {
+    display: none;
+}
+
+.file-item:hover {
+    background: #181818;
+    color: #b6d934;
+}
+
+.app-logo {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 18px 12px 24px;
+}
+
+.app-logo img {
+    display: block;
+
+    max-width: 180px;
+    max-height: 70px;
+
+    width: auto;
+    height: auto;
+
+    object-fit: contain;
+}
+.workspace {
+    width: 100%;
+    min-width: 0;
+
+    padding: 20px;
+
+    background: #0d0d0d;
+}
+
+
+.transport {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin-bottom: 20px;
+
+    padding: 10px;
+
+    background: #111;
+
+    border: 1px solid #333;
+}
+
+
+.transport button {
+
+    background: #181818;
+
+    color: #ccc;
+
+    border: 1px solid #444;
+
+    padding: 6px 14px;
+
+    cursor: pointer;
+}
+
+
+.transport button:hover {
+    color: #b6d934;
+}
