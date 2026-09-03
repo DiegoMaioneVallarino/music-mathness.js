@@ -1,4 +1,6 @@
-export type Step = 0 | 1
+export type Step =
+    0 |
+    1
 
 
 export type PatternLayer = {
@@ -7,13 +9,16 @@ export type PatternLayer = {
 
     name: string
 
-    sampleId: string | null
+    sampleId:
+        string |
+        null
 
     mode:
         "sample" |
         "melodic"
 
-    steps: Step[]
+    steps:
+        Step[]
 }
 
 
@@ -35,7 +40,8 @@ export type StepPattern = {
 
     id: string
 
-    type: "step"
+    type:
+        "step"
 
     name: string
 
@@ -45,7 +51,8 @@ export type StepPattern = {
 
     resolution: number
 
-    layers: PatternLayer[]
+    layers:
+        PatternLayer[]
 }
 
 
@@ -53,7 +60,8 @@ export type PianoPattern = {
 
     id: string
 
-    type: "piano"
+    type:
+        "piano"
 
     name: string
 
@@ -63,32 +71,37 @@ export type PianoPattern = {
 
     resolution: number
 
-    notes: PianoNote[]
+    notes:
+        PianoNote[]
 }
 
 
-export type Pattern =
-    StepPattern |
-    PianoPattern |
-    CyclePattern |
-    TonalCyclePattern
+/*
+    CYCLE RHYTHM
+*/
 
-    export type CycleLayer = {
+export type CycleLayer = {
+
     id: string
 
     name: string
 
-    sampleId: string | null
+    sampleId:
+        string |
+        null
 
     division: number
 
     phase: number
 }
 
+
 export type CyclePattern = {
+
     id: string
 
-    type: "cycle"
+    type:
+        "cycle"
 
     name: string
 
@@ -96,13 +109,101 @@ export type CyclePattern = {
 
     cycleBeats: number
 
-    layers: CycleLayer[]
+    layers:
+        CycleLayer[]
 }
 
-export type TonalTraversalMode =
-    "divide" |
-    "step"
 
+/*
+    TONAL FIGURES
+*/
+
+export type TonalFigureMode =
+    "regular" |
+    "irregular"
+
+
+export type TonalFigure = {
+
+    id: string
+
+    name: string
+
+
+    /*
+        REGULAR
+
+        Todos los saltos
+        tienen el mismo tamaño.
+
+        Ejemplo:
+
+        BASE 14
+
+        regularStep = 2
+
+        0
+        2
+        4
+        6
+        8
+        10
+        12
+        0
+    */
+
+    mode:
+        TonalFigureMode
+
+
+    regularStep:
+        number
+
+
+    /*
+        IRREGULAR
+
+        Cada valor representa
+        un salto diferente.
+
+        Ejemplo:
+
+        [1, 2, 4, 4, 2, 1]
+    */
+
+    steps:
+        number[]
+
+
+    /*
+        Si está activado,
+        el último step
+        deja de ser manual.
+
+        El engine calcula
+        automáticamente el salto
+        necesario para cerrar
+        la figura dentro del módulo.
+    */
+
+    closeLastStep:
+        boolean
+
+
+    /*
+        Rotación discreta
+        de ESTA figura
+        sobre la base tonal.
+    */
+
+    rotation:
+        number
+}
+
+
+/*
+    TONAL CYCLE
+*/
 
 export type TonalCyclePattern = {
 
@@ -117,18 +218,21 @@ export type TonalCyclePattern = {
 
 
     /*
-        Por ahora:
-        C4 = 60
+        C4 = MIDI 60
     */
 
-    rootMidi: number
+    rootMidi:
+        number
 
 
     /*
-        Major:
+        Ejemplo:
 
-        C D E F G A B
-        0 2 4 5 7 9 11
+        C Major
+
+        C  D  E  F  G  A  B
+
+        0  2  4  5  7  9  11
     */
 
     scaleIntervals:
@@ -136,42 +240,75 @@ export type TonalCyclePattern = {
 
 
     /*
-        1 → 12 puntos
-        2 → 24
-        3 → 36
-        ...
+        Cantidad de octavas
+        que recorre la base
+        antes de reflejarse.
+
+        Para una escala
+        de 7 grados:
+
+        1 → 14 posiciones
+        2 → 28 posiciones
+        3 → 42 posiciones
+        4 → 56 posiciones
     */
 
-    octaveSpan: number
-
-
-    traversalMode:
-        TonalTraversalMode
-
-
-    /*
-        DIVIDE:
-        cantidad de partes
-
-        STEP:
-        tamaño del salto
-    */
-
-    amount:
+    octaveSpan:
         number
 
 
     /*
-        Rotación discreta
-        en posiciones tonales.
+        Un Tonal Cycle
+        puede contener
+        varias figuras.
     */
 
-    rotation:
-        number
+    figures:
+        TonalFigure[]
 
+
+    /*
+        Figura actualmente
+        seleccionada
+        en el mini menú superior.
+    */
+
+    selectedFigureId:
+        string
+
+
+    /*
+        Duración temporal
+        del ciclo completo
+        en beats.
+    */
 
     cycleBeats:
         number
 
-    gate: number
+
+    /*
+        Duración relativa
+        de las notas.
+
+        1 = ocupa todo
+        el intervalo temporal.
+
+        < 1 = más corta
+        > 1 = se solapa
+    */
+
+    gate:
+        number
 }
+
+
+/*
+    UNION GENERAL
+*/
+
+export type Pattern =
+    StepPattern |
+    PianoPattern |
+    CyclePattern |
+    TonalCyclePattern

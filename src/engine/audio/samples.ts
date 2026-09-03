@@ -2,8 +2,11 @@ export type Sample = {
     id: string
     name: string
     url: string
-}
 
+    detectedMidi?: number | null
+    detectedFrequency?: number | null
+    pitchConfidence?: number
+}
 
 export const DEFAULT_SAMPLES: Sample[] = [
     {

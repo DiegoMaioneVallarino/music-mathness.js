@@ -44,7 +44,8 @@ import type {
 } from "./engine/audio/samples"
 
 import type {
-    Pattern
+    Pattern,
+    TonalFigureMode
 } from "./engine/patterns/types"
 
 import type {
@@ -62,9 +63,16 @@ import {
 } from "./engine/patterns/piano"
 
 import {
+    detectPitch
+} from "./engine/audio/pitchDetection"
+
+import {
     createCyclePattern
 } from "./engine/patterns/createCyclePattern"
 
+import {
+    createTonalCyclePattern
+} from "./engine/patterns/createTonalCyclePattern"
 import CycleEditor from "./components/CycleEditor"
 
 import {
@@ -74,12 +82,6 @@ import {
 } from "./engine/patterns/cycleLayer"
 
 import "./App.css"
-
-
-import {
-    createTonalCyclePattern
-} from "./engine/patterns/createTonalCyclePattern"
-
 
 import TonalCycleEditor from "./components/TonalCycleEditor"
 
@@ -566,54 +568,130 @@ function handleTogglePianoNote(
             )
     )
 }
-    function handleImportSample(
-        event:
-            React.ChangeEvent<HTMLInputElement>
+   async function handleImportSample(
+    event:
+        React.ChangeEvent<HTMLInputElement>
+) {
+
+    const files =
+        event.target.files
+
+
+    if (!files) {
+        return
+    }
+
+
+    const audioContext =
+        new AudioContext()
+
+
+    const importedSamples:
+        Sample[] = []
+
+
+    for (
+        const file of
+        Array.from(files)
     ) {
 
-        const files =
-            event.target.files
+        /*
+            URL que utilizaremos
+            posteriormente para reproducir
+            el sample.
+        */
 
-
-        if (!files) {
-            return
-        }
-
-
-        const importedSamples =
-            Array.from(files).map(
-                file => {
-
-                    const sample: Sample = {
-
-                        id:
-                            crypto.randomUUID(),
-
-                        name:
-                            file.name,
-
-                        url:
-                            URL.createObjectURL(
-                                file
-                            )
-                    }
-
-
-                    return sample
-                }
+        const url =
+            URL.createObjectURL(
+                file
             )
 
 
-        setSamples(
-            currentSamples => [
-                ...currentSamples,
-                ...importedSamples
-            ]
+        /*
+            Convertimos el archivo
+            en bytes.
+        */
+
+        const arrayBuffer =
+            await file.arrayBuffer()
+
+
+        /*
+            Web Audio API convierte
+            WAV / MP3 / etc.
+            en muestras PCM.
+        */
+
+        const audioBuffer =
+            await audioContext
+                .decodeAudioData(
+                    arrayBuffer
+                )
+
+
+        /*
+            Nuestro detector matemático
+            intenta descubrir la frecuencia
+            fundamental.
+        */
+
+        const pitch =
+            detectPitch(
+                audioBuffer
+            )
+
+
+        console.log(
+            "PITCH DETECTION",
+            file.name,
+            pitch
         )
 
 
-        event.target.value = ""
+        const sample: Sample = {
+
+            id:
+                crypto.randomUUID(),
+
+            name:
+                file.name,
+
+            url,
+
+            detectedMidi:
+                pitch?.midi ??
+                null,
+
+            detectedFrequency:
+                pitch?.frequency ??
+                null,
+
+            pitchConfidence:
+                pitch?.confidence ??
+                0
+        }
+
+
+        importedSamples.push(
+            sample
+        )
     }
+
+
+    await audioContext.close()
+
+
+    setSamples(
+        currentSamples => [
+            ...currentSamples,
+            ...importedSamples
+        ]
+    )
+
+
+    event.target.value =
+        ""
+}
 
 
     /*
@@ -808,10 +886,8 @@ function handleTogglePianoNote(
         El PianoPattern tendrá después
         su propio sintetizador / instrumento.
     */
-function handleTonalModeChange(
-    mode:
-        "divide" |
-        "step"
+function handleTonalFigureModeChange(
+    mode: TonalFigureMode
 ) {
 
     setPatterns(
@@ -826,37 +902,6 @@ function handleTonalModeChange(
                         return pattern
                     }
 
-                    if (
-                        pattern.type !==
-                        "tonal-cycle"
-                    ) {
-                        return pattern
-                    }
-
-                    return {
-                        ...pattern,
-                        traversalMode:
-                            mode
-                    }
-                }
-            )
-    )
-}
-function handleTonalAmountChange(
-    amount: number
-) {
-
-    setPatterns(
-        currentPatterns =>
-            currentPatterns.map(
-                pattern => {
-
-                    if (
-                        pattern.id !==
-                        selectedPatternId
-                    ) {
-                        return pattern
-                    }
 
                     if (
                         pattern.type !==
@@ -865,21 +910,532 @@ function handleTonalAmountChange(
                         return pattern
                     }
 
+
                     return {
                         ...pattern,
 
-                        amount:
-                            Math.max(
-                                1,
-                                Math.round(
-                                    amount
-                                )
+                        figures:
+                            pattern.figures.map(
+                                figure => {
+
+                                    if (
+                                        figure.id !==
+                                        pattern.selectedFigureId
+                                    ) {
+                                        return figure
+                                    }
+
+
+                                    return {
+                                        ...figure,
+                                        mode
+                                    }
+                                }
                             )
                     }
                 }
             )
     )
 }
+
+
+function handleTonalRegularStepChange(
+    step: number
+) {
+
+    setPatterns(
+        currentPatterns =>
+            currentPatterns.map(
+                pattern => {
+
+                    if (
+                        pattern.id !==
+                        selectedPatternId
+                    ) {
+                        return pattern
+                    }
+
+
+                    if (
+                        pattern.type !==
+                        "tonal-cycle"
+                    ) {
+                        return pattern
+                    }
+
+
+                    const totalPositions =
+                        pattern.scaleIntervals.length *
+                        2 *
+                        pattern.octaveSpan
+
+
+                    /*
+                        REGULAR solo acepta
+                        divisores exactos
+                        de nuestra base.
+                    */
+
+                    const normalizedStep =
+                        Math.max(
+                            1,
+                            Math.min(
+                                totalPositions,
+                                Math.round(
+                                    step
+                                )
+                            )
+                        )
+
+
+                    if (
+                        totalPositions %
+                        normalizedStep !==
+                        0
+                    ) {
+                        return pattern
+                    }
+
+
+                    return {
+                        ...pattern,
+
+                        figures:
+                            pattern.figures.map(
+                                figure => {
+
+                                    if (
+                                        figure.id !==
+                                        pattern.selectedFigureId
+                                    ) {
+                                        return figure
+                                    }
+
+
+                                    return {
+                                        ...figure,
+
+                                        regularStep:
+                                            normalizedStep
+                                    }
+                                }
+                            )
+                    }
+                }
+            )
+    )
+}
+
+
+function handleTonalFigureRotationChange(
+    rotation: number
+) {
+
+    setPatterns(
+        currentPatterns =>
+            currentPatterns.map(
+                pattern => {
+
+                    if (
+                        pattern.id !==
+                        selectedPatternId
+                    ) {
+                        return pattern
+                    }
+
+
+                    if (
+                        pattern.type !==
+                        "tonal-cycle"
+                    ) {
+                        return pattern
+                    }
+
+
+                    const totalPositions =
+                        pattern.scaleIntervals.length *
+                        2 *
+                        pattern.octaveSpan
+
+
+                    if (
+                        totalPositions <= 0
+                    ) {
+                        return pattern
+                    }
+
+
+                    const normalizedRotation =
+                        (
+                            (
+                                rotation %
+                                totalPositions
+                            ) +
+                            totalPositions
+                        ) %
+                        totalPositions
+
+
+                    return {
+                        ...pattern,
+
+                        figures:
+                            pattern.figures.map(
+                                figure => {
+
+                                    if (
+                                        figure.id !==
+                                        pattern.selectedFigureId
+                                    ) {
+                                        return figure
+                                    }
+
+
+                                    return {
+                                        ...figure,
+
+                                        rotation:
+                                            normalizedRotation
+                                    }
+                                }
+                            )
+                    }
+                }
+            )
+    )
+}
+
+
+function handleTonalIrregularStepChange(
+    index: number,
+    step: number
+) {
+
+    setPatterns(
+        currentPatterns =>
+            currentPatterns.map(
+                pattern => {
+
+                    if (
+                        pattern.id !==
+                        selectedPatternId
+                    ) {
+                        return pattern
+                    }
+
+
+                    if (
+                        pattern.type !==
+                        "tonal-cycle"
+                    ) {
+                        return pattern
+                    }
+
+
+                    return {
+                        ...pattern,
+
+                        figures:
+                            pattern.figures.map(
+                                figure => {
+
+                                    if (
+                                        figure.id !==
+                                        pattern.selectedFigureId
+                                    ) {
+                                        return figure
+                                    }
+
+
+                                    const newSteps =
+                                        [
+                                            ...figure.steps
+                                        ]
+
+
+                                    if (
+                                        index < 0 ||
+                                        index >=
+                                        newSteps.length
+                                    ) {
+                                        return figure
+                                    }
+
+
+                                    newSteps[
+                                        index
+                                    ] =
+                                        Math.max(
+                                            1,
+                                            Math.round(
+                                                step
+                                            )
+                                        )
+
+
+                                    return {
+                                        ...figure,
+
+                                        steps:
+                                            newSteps
+                                    }
+                                }
+                            )
+                    }
+                }
+            )
+    )
+}
+
+
+function handleAddTonalIrregularStep() {
+
+    setPatterns(
+        currentPatterns =>
+            currentPatterns.map(
+                pattern => {
+
+                    if (
+                        pattern.id !==
+                        selectedPatternId
+                    ) {
+                        return pattern
+                    }
+
+
+                    if (
+                        pattern.type !==
+                        "tonal-cycle"
+                    ) {
+                        return pattern
+                    }
+
+
+                    return {
+                        ...pattern,
+
+                        figures:
+                            pattern.figures.map(
+                                figure => {
+
+                                    if (
+                                        figure.id !==
+                                        pattern.selectedFigureId
+                                    ) {
+                                        return figure
+                                    }
+
+
+                                    /*
+                                        Si CLOSE estaba activo,
+                                        al añadir otro step
+                                        el nuevo step pasa a ser
+                                        el último de la lista.
+
+                                        Por eso dejamos CLOSE
+                                        apagado temporalmente.
+                                    */
+
+                                    return {
+                                        ...figure,
+
+                                        steps: [
+                                            ...figure.steps,
+                                            1
+                                        ],
+
+                                        closeLastStep:
+                                            false
+                                    }
+                                }
+                            )
+                    }
+                }
+            )
+    )
+}
+
+
+function handleTonalCloseLastStepChange(
+    close: boolean
+) {
+
+    setPatterns(
+        currentPatterns =>
+            currentPatterns.map(
+                pattern => {
+
+                    if (
+                        pattern.id !==
+                        selectedPatternId
+                    ) {
+                        return pattern
+                    }
+
+
+                    if (
+                        pattern.type !==
+                        "tonal-cycle"
+                    ) {
+                        return pattern
+                    }
+
+
+                    return {
+                        ...pattern,
+
+                        figures:
+                            pattern.figures.map(
+                                figure => {
+
+                                    if (
+                                        figure.id !==
+                                        pattern.selectedFigureId
+                                    ) {
+                                        return figure
+                                    }
+
+
+                                    return {
+                                        ...figure,
+
+                                        closeLastStep:
+                                            close
+                                    }
+                                }
+                            )
+                    }
+                }
+            )
+    )
+}
+
+
+function handleSelectTonalFigure(
+    figureId: string
+) {
+
+    setPatterns(
+        currentPatterns =>
+            currentPatterns.map(
+                pattern => {
+
+                    if (
+                        pattern.id !==
+                        selectedPatternId
+                    ) {
+                        return pattern
+                    }
+
+
+                    if (
+                        pattern.type !==
+                        "tonal-cycle"
+                    ) {
+                        return pattern
+                    }
+
+
+                    const exists =
+                        pattern.figures.some(
+                            figure =>
+                                figure.id ===
+                                figureId
+                        )
+
+
+                    if (
+                        !exists
+                    ) {
+                        return pattern
+                    }
+
+
+                    return {
+                        ...pattern,
+
+                        selectedFigureId:
+                            figureId
+                    }
+                }
+            )
+    )
+}
+
+
+function handleAddTonalFigure() {
+
+    setPatterns(
+        currentPatterns =>
+            currentPatterns.map(
+                pattern => {
+
+                    if (
+                        pattern.id !==
+                        selectedPatternId
+                    ) {
+                        return pattern
+                    }
+
+
+                    if (
+                        pattern.type !==
+                        "tonal-cycle"
+                    ) {
+                        return pattern
+                    }
+
+
+                    const newFigureId =
+                        crypto.randomUUID()
+
+
+                    const newFigure = {
+
+                        id:
+                            newFigureId,
+
+                        name:
+                            `Figure ${
+                                pattern.figures.length +
+                                1
+                            }`,
+
+                        mode:
+                            "regular" as const,
+
+                        regularStep:
+                            2,
+
+                        steps: [
+                            2
+                        ],
+
+                        closeLastStep:
+                            false,
+
+                        rotation:
+                            0
+                    }
+
+
+                    return {
+                        ...pattern,
+
+                        figures: [
+                            ...pattern.figures,
+                            newFigure
+                        ],
+
+                        selectedFigureId:
+                            newFigureId
+                    }
+                }
+            )
+    )
+}
+
+
 function handleTonalOctaveSpanChange(
     octaveSpan: number
 ) {
@@ -905,79 +1461,59 @@ function handleTonalOctaveSpanChange(
                     }
 
 
-                    return {
-                        ...pattern,
-
-                        octaveSpan:
-                            Math.max(
-                                1,
-                                Math.round(
-                                    octaveSpan
-                                )
-                            ),
-
-                        /*
-                            Reset prudente porque
-                            ha cambiado el espacio
-                            modular completo.
-                        */
-
-                        rotation: 0
-                    }
-                }
-            )
-    )
-}
-function handleTonalRotationChange(
-    rotation: number
-) {
-
-    setPatterns(
-        currentPatterns =>
-            currentPatterns.map(
-                pattern => {
-
-                    if (
-                        pattern.id !==
-                        selectedPatternId
-                    ) {
-                        return pattern
-                    }
-
-                    if (
-                        pattern.type !==
-                        "tonal-cycle"
-                    ) {
-                        return pattern
-                    }
+                    const nextOctaveSpan =
+                        Math.max(
+                            1,
+                            Math.round(
+                                octaveSpan
+                            )
+                        )
 
 
                     const totalPositions =
                         pattern.scaleIntervals.length *
                         2 *
-                        pattern.octaveSpan
-
-
-                    const normalizedRotation =
-                        (
-                            (
-                                rotation %
-                                totalPositions
-                            ) +
-                            totalPositions
-                        ) %
-                        totalPositions
+                        nextOctaveSpan
 
 
                     return {
                         ...pattern,
-                        rotation:
-                            normalizedRotation
+
+                        octaveSpan:
+                            nextOctaveSpan,
+
+
+                        /*
+                            Al cambiar la base,
+                            normalizamos las rotaciones
+                            de todas las figuras.
+                        */
+
+                        figures:
+                            pattern.figures.map(
+                                figure => ({
+
+                                    ...figure,
+
+                                    rotation:
+                                        (
+                                            (
+                                                figure.rotation %
+                                                totalPositions
+                                            ) +
+                                            totalPositions
+                                        ) %
+                                        totalPositions
+                                })
+                            )
                     }
                 }
             )
     )
 }
+
+
+
 
 function handleTonalRootChange(
     rootMidi: number
@@ -1250,33 +1786,36 @@ if (
     )
 
 
-    playTonalCyclePatternLoop(
+ playTonalCyclePatternLoop(
 
-        () => {
+    () => {
 
-            const pattern =
-                patternsRef.current.find(
-                    pattern =>
-                        pattern.id ===
-                        patternId
-                )
-
-
-            if (
-                !pattern ||
-                pattern.type !==
-                    "tonal-cycle"
-            ) {
-
-                return undefined
-            }
+        const pattern =
+            patternsRef.current.find(
+                pattern =>
+                    pattern.id ===
+                    patternId
+            )
 
 
-            return pattern
-        },
+        if (
+            !pattern ||
+            pattern.type !==
+                "tonal-cycle"
+        ) {
 
-        BPM
-    )
+            return undefined
+        }
+
+
+        return pattern
+    },
+
+    BPM,
+
+    () =>
+        samplesRef.current
+)
 
 
     return
@@ -1738,7 +2277,8 @@ function formatPlaybackTime(
 
                     : (
 
-                     <TonalCycleEditor
+<TonalCycleEditor
+
     pattern={
         selectedPattern
     }
@@ -1758,16 +2298,36 @@ function formatPlaybackTime(
         playbackMode === "pattern"
     }
 
-    onModeChange={
-        handleTonalModeChange
+    onFigureModeChange={
+        handleTonalFigureModeChange
     }
 
-    onAmountChange={
-        handleTonalAmountChange
+    onRegularStepChange={
+        handleTonalRegularStepChange
     }
 
-    onRotationChange={
-        handleTonalRotationChange
+    onFigureRotationChange={
+        handleTonalFigureRotationChange
+    }
+
+    onIrregularStepChange={
+        handleTonalIrregularStepChange
+    }
+
+    onAddIrregularStep={
+        handleAddTonalIrregularStep
+    }
+
+    onCloseLastStepChange={
+        handleTonalCloseLastStepChange
+    }
+
+    onSelectFigure={
+        handleSelectTonalFigure
+    }
+
+    onAddFigure={
+        handleAddTonalFigure
     }
 
     onRootChange={
@@ -1781,6 +2341,7 @@ function formatPlaybackTime(
     onOctaveSpanChange={
         handleTonalOctaveSpanChange
     }
+
 />
 
                     )

@@ -1,5 +1,6 @@
 import type {
-    TonalCyclePattern
+    TonalCyclePattern,
+    TonalFigure
 } from "./types"
 
 
@@ -10,7 +11,35 @@ export function createTonalCyclePattern(
     cycleBeats = 8
 ): TonalCyclePattern {
 
+    const firstFigure:
+        TonalFigure = {
+
+        id:
+            crypto.randomUUID(),
+
+        name:
+            "Figure 1",
+
+        mode:
+            "regular",
+
+        regularStep:
+            2,
+
+        steps: [
+            2
+        ],
+
+        closeLastStep:
+            false,
+
+        rotation:
+            0
+    }
+
+
     return {
+
         id:
             crypto.randomUUID(),
 
@@ -23,10 +52,6 @@ export function createTonalCyclePattern(
 
         rootMidi,
 
-        /*
-            Mayor:
-            C D E F G A B
-        */
         scaleIntervals: [
             0,
             2,
@@ -37,25 +62,19 @@ export function createTonalCyclePattern(
             11
         ],
 
-        /*
-            1 = 12 posiciones
-            2 = 24
-            3 = 36
-        */
-        octaveSpan: 1,
-            
+        octaveSpan:
+            1,
 
-        traversalMode:
-            "divide",
+        figures: [
+            firstFigure
+        ],
 
-        amount:
-            4,
-
-        rotation:
-            0,
+        selectedFigureId:
+            firstFigure.id,
 
         cycleBeats,
-        gate: 0.8, 
-        
+
+        gate:
+            0.8
     }
 }

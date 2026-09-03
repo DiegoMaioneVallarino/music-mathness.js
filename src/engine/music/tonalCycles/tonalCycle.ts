@@ -1,6 +1,6 @@
-export type TonalTraversalMode =
-    "divide" |
-    "step"
+import type {
+    TonalFigure
+} from "../../patterns/types"
 
 
 export type TonalCyclePosition = {
@@ -10,26 +10,19 @@ export type TonalCyclePosition = {
 
 
 /*
-    Construye el espacio tonal completo.
+    BASE TONAL
 
-    scaleSize = 7
+    Construye las posiciones reales
+    de la escala incluyendo octavas
+    y reflexión.
+
+    Escala de 7 grados:
+
     octaveSpan = 1
-
-    C4 D4 E4 F4 G4 A4 B4 C5
-    B4 A4 G4 F4 E4 D4
-
-    = 14 posiciones
-
+    → 14 posiciones
 
     octaveSpan = 2
-
-    C4 ... B4
-    C5 ... B5
-    C6
-    B5 ... C5
-    B4 ... D4
-
-    = 28 posiciones
+    → 28 posiciones
 */
 
 export function createTonalCyclePositions(
@@ -48,15 +41,6 @@ export function createTonalCyclePositions(
     const ascending:
         TonalCyclePosition[] = []
 
-
-    /*
-        Construimos la subida.
-
-        Para dos octavas:
-
-        C4 D4 ... B4
-        C5 D5 ... B5
-    */
 
     for (
         let octave = 0;
@@ -80,11 +64,12 @@ export function createTonalCyclePositions(
 
 
     /*
-        Añadimos la raíz superior.
+        Añadimos la raíz
+        de la octava superior.
 
-        span 1 → C5
-        span 2 → C6
-        span 3 → C7
+        Ejemplo:
+
+        C4 D4 E4 F4 G4 A4 B4 C5
     */
 
     ascending.push({
@@ -95,17 +80,10 @@ export function createTonalCyclePositions(
 
 
     /*
-        Reflejamos la subida,
-        sin duplicar:
+        Reflejamos sin duplicar
+        los extremos.
 
-        - la raíz inicial
-        - la raíz superior
-
-        C4 ... C5
-
-        →
-
-        C4 ... C5 ... D4
+        C4 ... C5 B4 ... D4
     */
 
     const descending =
@@ -125,160 +103,129 @@ export function createTonalCyclePositions(
 
 
 /*
-    Devuelve todos los divisores
-    exactos de una base.
+    NORMALIZACIÓN MODULAR
 
-    14 →
-    [1, 2, 7, 14]
+    Convierte cualquier posición
+    al rango:
 
-    28 →
-    [1, 2, 4, 7, 14, 28]
+    0 ... N - 1
 */
 
-export function getDivisors(
-    value: number
-): number[] {
+export function normalizePosition(
+    position: number,
+    totalPositions: number
+): number {
 
-    const divisors:
-        number[] = []
-
-
-    for (
-        let candidate = 1;
-        candidate <= value;
-        candidate++
+    if (
+        totalPositions <= 0
     ) {
-
-        if (
-            value %
-                candidate ===
-            0
-        ) {
-
-            divisors.push(
-                candidate
-            )
-        }
+        return 0
     }
 
 
-    return divisors
+    return (
+        (
+            position %
+                totalPositions
+        ) +
+        totalPositions
+    ) %
+    totalPositions
 }
 
 
 /*
-    DIVIDE
+    CLOSE
 
-    Divide el círculo solamente
-    cuando la división es exacta.
+    Calcula el salto positivo
+    necesario para volver al origen.
 
-    BASE 28
-    DIVIDE 4
+    Ejemplo:
 
-    spacing = 7
+    BASE 7
 
-    0 → 7 → 14 → 21
+    [2, 3, 3]
+
+    suma = 8
+    8 mod 7 = 1
+
+    close = 6
+
+    [2, 3, 3, 6]
+
+    suma = 14
+    14 mod 7 = 0
 */
 
-export function getDivideTraversal(
-    totalPositions: number,
-    divisions: number,
-    rotation = 0
-): number[] {
+export function getClosingStep(
+    steps: number[],
+    totalPositions: number
+): number {
 
     if (
-        totalPositions <= 0 ||
-        divisions <= 0
+        totalPositions <= 0
     ) {
-        return []
+        return 0
     }
 
 
-    const safeDivisions =
-        Math.round(
-            divisions
+    const accumulated =
+        steps.reduce(
+            (
+                sum,
+                step
+            ) =>
+                sum +
+                step,
+            0
+        )
+
+
+    const remainder =
+        normalizePosition(
+            accumulated,
+            totalPositions
         )
 
 
     /*
-        No permitimos aproximaciones.
+        Ya está cerrado.
 
-        Ejemplo:
-
-        14 / 5
-
-        no forma una división
-        discreta exacta.
+        Preferimos una vuelta
+        completa antes que STEP 0.
     */
 
     if (
-        totalPositions %
-            safeDivisions !==
-        0
+        remainder === 0
     ) {
-        return []
+        return totalPositions
     }
 
 
-    const spacing =
-        totalPositions /
-        safeDivisions
-
-
-    const normalizedRotation =
-        (
-            (
-                rotation %
-                    totalPositions
-            ) +
-            totalPositions
-        ) %
-        totalPositions
-
-
-    return Array.from(
-        {
-            length:
-                safeDivisions
-        },
-
-        (_, index) =>
-            (
-                normalizedRotation +
-                index *
-                    spacing
-            ) %
-            totalPositions
+    return (
+        totalPositions -
+        remainder
     )
 }
 
 
 /*
-    STEP
+    PASOS REALES DE LA FIGURA
 
-    Recorremos el grupo modular:
+    REGULAR:
+        un salto constante
 
-    x(n+1) =
-        x(n) + step mod N
+    IRREGULAR:
+        lista de saltos
 
-
-    BASE 14
-    STEP 5
-
-    0
-    5
-    10
-    1
-    6
-    11
-    2
-    ...
+    CLOSE:
+        reemplaza automáticamente
+        el último salto.
 */
 
-export function getStepTraversal(
-    totalPositions: number,
-    step: number,
-    rotation = 0
+export function getFigureSteps(
+    figure: TonalFigure,
+    totalPositions: number
 ): number[] {
 
     if (
@@ -288,99 +235,618 @@ export function getStepTraversal(
     }
 
 
-    const safeStep =
-        Math.max(
-            1,
-            Math.round(
-                step
-            )
-        )
+    /*
+        REGULAR
+    */
 
-
-    const normalizedRotation =
-        (
-            (
-                rotation %
-                    totalPositions
-            ) +
-            totalPositions
-        ) %
-        totalPositions
-
-
-    const visited =
-        new Set<number>()
-
-
-    const result:
-        number[] = []
-
-
-    let current =
-        normalizedRotation
-
-
-    while (
-        !visited.has(
-            current
-        )
+    if (
+        figure.mode ===
+        "regular"
     ) {
 
-        visited.add(
-            current
-        )
+        const step =
+            normalizePosition(
+                figure.regularStep,
+                totalPositions
+            )
 
 
-        result.push(
-            current
-        )
+        /*
+            Evitamos STEP 0.
+        */
 
-
-        current =
-            (
-                current +
-                safeStep
-            ) %
-            totalPositions
+        return [
+            step === 0
+                ? totalPositions
+                : step
+        ]
     }
 
 
-    return result
+    /*
+        IRREGULAR
+    */
+
+    if (
+        figure.steps.length === 0
+    ) {
+        return []
+    }
+
+
+    /*
+        Sin CLOSE:
+        devolvemos la lista tal cual.
+    */
+
+    if (
+        !figure.closeLastStep
+    ) {
+
+        return [
+            ...figure.steps
+        ]
+    }
+
+
+    /*
+        El último elemento
+        representa el slot CLOSE.
+
+        Su valor manual se ignora.
+    */
+
+    const previousSteps =
+        figure.steps.slice(
+            0,
+            -1
+        )
+
+
+    /*
+        Si solo existe un slot
+        y está marcado CLOSE,
+        damos una vuelta completa.
+    */
+
+    if (
+        previousSteps.length === 0
+    ) {
+
+        return [
+            totalPositions
+        ]
+    }
+
+
+    const closingStep =
+        getClosingStep(
+            previousSteps,
+            totalPositions
+        )
+
+
+    return [
+        ...previousSteps,
+        closingStep
+    ]
 }
 
 
 /*
-    Operador general.
+    RECORRIDO REGULAR
 
-    DIVIDE:
-        simetría exacta
+    Repite el mismo salto
+    hasta volver al punto inicial.
 
-    STEP:
-        recorrido modular
+    BASE 14
+    STEP 2:
+
+    0
+    2
+    4
+    6
+    8
+    10
+    12
 */
 
-export function getTonalTraversal(
-    mode: TonalTraversalMode,
-    totalPositions: number,
-    amount: number,
-    rotation = 0
+function getRegularTraversal(
+    figure: TonalFigure,
+    totalPositions: number
+): number[] {
+
+    const steps =
+        getFigureSteps(
+            figure,
+            totalPositions
+        )
+
+
+    if (
+        steps.length === 0
+    ) {
+        return []
+    }
+
+
+    const step =
+        steps[0]
+
+
+    const start =
+        normalizePosition(
+            figure.rotation,
+            totalPositions
+        )
+
+
+    const traversal:
+        number[] = []
+
+
+    let position =
+        start
+
+
+    /*
+        Protección extra para
+        evitar loops accidentales.
+    */
+
+    let safety =
+        0
+
+
+    const maxIterations =
+        totalPositions * 2 +
+        1
+
+
+    do {
+
+        traversal.push(
+            position
+        )
+
+
+        position =
+            normalizePosition(
+                position +
+                    step,
+                totalPositions
+            )
+
+
+        safety++
+
+
+    } while (
+        position !== start &&
+        safety <
+            maxIterations
+    )
+
+
+    return traversal
+}
+
+
+/*
+    RECORRIDO IRREGULAR
+
+    Cada número de la lista
+    es una arista.
+
+    Ejemplo:
+
+    BASE 14
+
+    [1, 2, 4, 4, 2, 1]
+
+    0
+    1
+    3
+    7
+    11
+    13
+    0
+*/
+
+function getIrregularTraversal(
+    figure: TonalFigure,
+    totalPositions: number
+): number[] {
+
+    const steps =
+        getFigureSteps(
+            figure,
+            totalPositions
+        )
+
+
+    if (
+        steps.length === 0
+    ) {
+        return []
+    }
+
+
+    const start =
+        normalizePosition(
+            figure.rotation,
+            totalPositions
+        )
+
+
+    /*
+        En modo irregular no basta
+        con recordar la posición.
+
+        También tenemos que recordar
+        qué step toca ejecutar.
+
+        Estado:
+
+        posición + stepIndex
+
+        Ejemplo:
+
+        posición 0
+        esperando step 0
+
+        solo cuando volvamos exactamente
+        a ese mismo estado hemos cerrado
+        el verdadero ciclo.
+    */
+
+    const traversal: number[] = []
+
+
+    const visitedStates =
+        new Set<string>()
+
+
+    let position =
+        start
+
+
+    let stepIndex =
+        0
+
+
+    while (true) {
+
+        const stateKey =
+            `${position}:${stepIndex}`
+
+
+        /*
+            Ya estuvimos exactamente aquí
+            con exactamente el mismo
+            siguiente salto.
+
+            Desde aquí todo se repetiría
+            infinitamente.
+
+            Hemos encontrado el loop.
+        */
+
+        if (
+            visitedStates.has(
+                stateKey
+            )
+        ) {
+            break
+        }
+
+
+        visitedStates.add(
+            stateKey
+        )
+
+
+        traversal.push(
+            position
+        )
+
+
+        /*
+            Ejecutamos el salto actual.
+        */
+
+        const step =
+            steps[
+                stepIndex
+            ]
+
+
+        position =
+            normalizePosition(
+                position + step,
+                totalPositions
+            )
+
+
+        /*
+            Cuando llegamos al final
+            de la lista:
+
+            2, 3, 3, 2
+                     ↓
+
+            volvemos al primer 2.
+
+            2, 3, 3, 2,
+            2, 3, 3, 2,
+            ...
+        */
+
+        stepIndex =
+            (
+                stepIndex + 1
+            ) %
+            steps.length
+    }
+
+
+    return traversal
+}
+
+
+/*
+    FUNCIÓN GENERAL
+
+    Toda la aplicación debería
+    pedir el recorrido por aquí.
+*/
+
+export function getFigureTraversal(
+    figure: TonalFigure,
+    totalPositions: number
 ): number[] {
 
     if (
-        mode === "divide"
+        totalPositions <= 0
+    ) {
+        return []
+    }
+
+
+    if (
+        figure.mode ===
+        "regular"
     ) {
 
-        return getDivideTraversal(
-            totalPositions,
-            amount,
-            rotation
+        return getRegularTraversal(
+            figure,
+            totalPositions
         )
     }
 
 
-    return getStepTraversal(
-        totalPositions,
-        amount,
-        rotation
+    return getIrregularTraversal(
+        figure,
+        totalPositions
     )
+}
+
+
+/*
+    CANTIDAD DE STEPS
+
+    No es necesariamente igual
+    al número de posiciones distintas.
+
+    REGULAR:
+        cantidad de saltos necesarios
+        para regresar al inicio.
+
+    IRREGULAR:
+        longitud del programa.
+*/
+
+export function getFigureStepCount(
+    figure: TonalFigure,
+    totalPositions: number
+): number {
+
+    return getFigureTraversal(
+        figure,
+        totalPositions
+    ).length
+}
+
+
+/*
+    DISTANCIA TOTAL RECORRIDA
+
+    Es la suma absoluta modular
+    de todos los saltos ejecutados.
+
+    Por ahora trabajamos solamente
+    con saltos positivos.
+*/
+
+export function getFigureDistance(
+    figure: TonalFigure,
+    totalPositions: number
+): number {
+
+    if (
+        totalPositions <= 0
+    ) {
+        return 0
+    }
+
+
+    const steps =
+        getFigureSteps(
+            figure,
+            totalPositions
+        )
+
+
+    if (
+        steps.length === 0
+    ) {
+        return 0
+    }
+
+
+    const traversal =
+        getFigureTraversal(
+            figure,
+            totalPositions
+        )
+
+
+    let distance =
+        0
+
+
+    for (
+        let index = 0;
+        index < traversal.length;
+        index++
+    ) {
+
+        const step =
+            steps[
+                index %
+                steps.length
+            ]
+
+
+        distance +=
+            step
+    }
+
+
+    return distance
+}
+
+
+/*
+    VUELTAS SOBRE EL MÓDULO
+
+    BASE 14
+    distancia 28
+
+    → 2 vueltas
+
+    Puede devolver decimales
+    si la figura irregular
+    queda abierta.
+*/
+
+export function getFigureTurns(
+    figure: TonalFigure,
+    totalPositions: number
+): number {
+
+    if (
+        totalPositions <= 0
+    ) {
+        return 0
+    }
+
+
+    return (
+        getFigureDistance(
+            figure,
+            totalPositions
+        ) /
+        totalPositions
+    )
+}
+
+
+/*
+    ¿LA FIGURA TERMINA
+    EN EL MISMO PUNTO
+    DONDE COMENZÓ?
+*/
+
+export function isFigureClosed(
+    figure: TonalFigure,
+    totalPositions: number
+): boolean {
+
+    if (
+        totalPositions <= 0
+    ) {
+        return false
+    }
+
+
+    /*
+        Las regulares de nuestro
+        sistema siempre se recorren
+        hasta cerrar.
+    */
+
+    if (
+        figure.mode ===
+        "regular"
+    ) {
+        return true
+    }
+
+
+    const steps =
+        getFigureSteps(
+            figure,
+            totalPositions
+        )
+
+
+    if (
+        steps.length === 0
+    ) {
+        return false
+    }
+
+
+    const total =
+        steps.reduce(
+            (
+                sum,
+                step
+            ) =>
+                sum +
+                step,
+            0
+        )
+
+
+    return (
+        normalizePosition(
+            total,
+            totalPositions
+        ) === 0
+    )
+}
+
+
+/*
+    CUÁNTAS POSICIONES DIFERENTES
+    TOCA LA FIGURA.
+*/
+
+export function getUniquePositionCount(
+    figure: TonalFigure,
+    totalPositions: number
+): number {
+
+    const traversal =
+        getFigureTraversal(
+            figure,
+            totalPositions
+        )
+
+
+    return new Set(
+        traversal
+    ).size
 }

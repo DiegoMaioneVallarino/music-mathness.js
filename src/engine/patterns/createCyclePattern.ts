@@ -10,6 +10,7 @@ export function createCyclePattern(
 ): CyclePattern {
 
     return {
+
         id:
             crypto.randomUUID(),
 

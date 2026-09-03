@@ -28,7 +28,7 @@ import {
 
 import {
     createTonalCyclePositions,
-    getTonalTraversal
+    getFigureTraversal
 } from "../music/tonalCycles/tonalCycle"
 
 let playbackTimer: number | null = null
@@ -157,6 +157,130 @@ function playMidiNote(
         context.currentTime +
             durationSeconds
     )
+}
+
+function playPitchedSample(
+    sample: Sample,
+    targetMidi: number,
+    durationSeconds: number
+) {
+
+    if (
+        sample.detectedMidi ===
+        null ||
+        sample.detectedMidi ===
+        undefined
+    ) {
+        return
+    }
+
+
+    const context =
+        getAudioContext()
+
+
+    fetch(sample.url)
+        .then(
+            response =>
+                response.arrayBuffer()
+        )
+        .then(
+            arrayBuffer =>
+                context.decodeAudioData(
+                    arrayBuffer
+                )
+        )
+        .then(
+            buffer => {
+
+                const source =
+                    context.createBufferSource()
+
+
+                source.buffer =
+                    buffer
+
+
+                /*
+                    Diferencia tonal entre:
+
+                    nota objetivo
+                    -
+                    nota original detectada
+                    del sample.
+                */
+
+                const semitoneDifference =
+                    targetMidi -
+                    sample.detectedMidi!
+
+
+                /*
+                    12 semitonos =
+                    una octava =
+                    playbackRate 2
+
+                    -12 semitonos =
+                    playbackRate 0.5
+                */
+
+                const playbackRate =
+                    2 ** (
+                        semitoneDifference /
+                        12
+                    )
+
+
+                source.playbackRate.value =
+                    playbackRate
+
+
+                const gain =
+                    context.createGain()
+
+
+                gain.gain.value =
+                    0.8
+
+
+                source.connect(
+                    gain
+                )
+
+
+                gain.connect(
+                    context.destination
+                )
+
+
+                source.start()
+
+
+                /*
+                    Cortamos el sample según
+                    el gate del Tonal Cycle.
+
+                    Si el sample termina antes,
+                    simplemente termina solo.
+                */
+
+                window.setTimeout(
+                    () => {
+
+                        try {
+
+                            source.stop()
+
+                        } catch {
+                            // ya terminó
+                        }
+
+                    },
+                    durationSeconds *
+                    1000
+                )
+            }
+        )
 }
 
 export function playTimelineLoop(
@@ -674,11 +798,20 @@ export function playTonalCyclePatternLoop(
             TonalCyclePattern |
             undefined,
 
-    bpm: number
+    bpm: number,
+
+    getSamples:
+        () =>
+            Sample[]
 ) {
 
     stopPattern()
 
+
+    /*
+        Un beat expresado
+        en milisegundos.
+    */
 
     const beatDurationMs =
         60000 / bpm
@@ -696,179 +829,278 @@ export function playTonalCyclePatternLoop(
 
 
         /*
-            C major:
+            Construimos la base tonal.
 
-            0 1 2 3 4 5 6 5 4 3 2 1
+            7 grados
+            octaveSpan 1
 
-            con repetitions = 1
+            = 14 posiciones
         */
 
         const tonalPositions =
-    createTonalCyclePositions(
-        pattern.scaleIntervals.length,
-        pattern.octaveSpan
-    )
+            createTonalCyclePositions(
+                pattern.scaleIntervals.length,
+                pattern.octaveSpan
+            )
 
-const totalPositions =
-    tonalPositions.length
+
+        const totalPositions =
+            tonalPositions.length
+
+
+        if (
+            totalPositions === 0
+        ) {
+            return
+        }
 
 
         /*
-            Ejemplo:
+            Buscamos la figura
+            actualmente seleccionada.
+        */
 
-            DIVIDE 4:
-            [0, 3, 6, 9]
+        const figure =
+            pattern.figures.find(
+                figure =>
+                    figure.id ===
+                    pattern.selectedFigureId
+            ) ??
+            pattern.figures[0]
 
-            STEP 4:
-            [0, 4, 8]
+
+        if (!figure) {
+            return
+        }
+
+
+        /*
+            El motor matemático
+            transforma la figura
+            en posiciones reales.
+
+            Ejemplo regular step 2:
+
+            0
+            2
+            4
+            6
+            8
+            10
+            12
         */
 
         const traversal =
-            getTonalTraversal(
-                pattern.traversalMode,
-                totalPositions,
-                pattern.amount,
-                pattern.rotation
+            getFigureTraversal(
+                figure,
+                totalPositions
             )
 
 
         if (
             traversal.length === 0
         ) {
-
-            playbackTimer =
-                window.setTimeout(
-                    scheduleCycle,
-                    pattern.cycleBeats *
-                        beatDurationMs
-                )
-
             return
         }
 
 
         /*
-            Distribuimos los vértices
-            uniformemente en el ciclo.
+            Duración total
+            de nuestro ciclo.
         */
 
-        const spacingBeats =
-            pattern.cycleBeats /
-            traversal.length
+        const cycleDurationMs =
+            pattern.cycleBeats *
+            beatDurationMs
 
 
         /*
-            Dejamos un poquito de espacio
-            entre notas para que se distinga
-            la secuencia.
+            Cada posición visitada
+            recibe una fracción igual
+            del tiempo total.
+
+            Ejemplo:
+
+            8 beats
+            7 posiciones
+
+            8 / 7 beats
+            por nota.
         */
 
+        const eventDurationMs =
+            cycleDurationMs /
+            traversal.length
 
 
         let eventIndex =
             0
 
 
-        function playNextNote() {
+        function playNextEvent() {
 
-    const currentPattern =
-        getPattern()
+            /*
+                Volvemos a consultar
+                el pattern actual.
 
+                Esto permite cambiar
+                root, gate, etc.
+                mientras reproduce.
+            */
 
-    if (!currentPattern) {
-        return
-    }
-
-
-    const noteDurationSeconds =
-        (
-            spacingBeats *
-            60 /
-            bpm
-        ) *
-        currentPattern.gate
+            const currentPattern =
+                getPattern()
 
 
-    if (
-        eventIndex >=
-        traversal.length
-    ) {
-
-        playbackTimer =
-            window.setTimeout(
-                scheduleCycle,
-                spacingBeats *
-                    beatDurationMs
-            )
-
-        return
-    }
+            if (!currentPattern) {
+                return
+            }
 
 
-   const positionIndex =
-    traversal[
-        eventIndex
-    ]
+            /*
+                Terminamos la figura.
 
-const position =
-    tonalPositions[
-        positionIndex
-    ]
+                Arrancamos otro ciclo,
+                donde volveremos a calcular
+                completamente su geometría.
+            */
 
-    if (!position) {
-    eventIndex++
-    playNextNote()
-    return
-}
+            if (
+                eventIndex >=
+                traversal.length
+            ) {
 
-const interval =
-    currentPattern.scaleIntervals[
-        position.degree
-    ]
+                playbackTimer =
+                    window.setTimeout(
+                        scheduleCycle,
+                        0
+                    )
 
-const midi =
-    currentPattern.rootMidi +
-    interval +
-    position.octaveOffset *
-        12
-
-playMidiNote(
-    midi,
-    noteDurationSeconds,
-    100
-)
-
-eventIndex++
-
-    eventIndex++
+                return
+            }
 
 
-    if (
-        eventIndex >=
-        traversal.length
-    ) {
-
-        playbackTimer =
-            window.setTimeout(
-                scheduleCycle,
-                spacingBeats *
-                    beatDurationMs
-            )
-
-        return
-    }
+            const positionIndex =
+                traversal[
+                    eventIndex
+                ]
 
 
-    playbackTimer =
-        window.setTimeout(
-            playNextNote,
-            spacingBeats *
-                beatDurationMs
-        )
-}
+            const tonalPosition =
+                tonalPositions[
+                    positionIndex
+                ]
 
 
-        playNextNote()
+            if (
+                !tonalPosition
+            ) {
+
+                eventIndex++
+
+                playNextEvent()
+
+                return
+            }
+
+
+            const interval =
+                currentPattern
+                    .scaleIntervals[
+                        tonalPosition.degree
+                    ]
+
+
+            if (
+                interval ===
+                undefined
+            ) {
+
+                eventIndex++
+
+                playNextEvent()
+
+                return
+            }
+
+
+            /*
+                Posición tonal
+                    ↓
+                grado
+                    ↓
+                intervalo MIDI
+                    ↓
+                octava
+            */
+
+            const midi =
+                currentPattern.rootMidi +
+                interval +
+                tonalPosition.octaveOffset *
+                12
+
+
+            /*
+                Duración audible.
+
+                gate = 1
+                ocupa exactamente
+                todo su slot.
+
+                gate = .8
+                ocupa 80%.
+
+                gate > 1
+                puede solaparse.
+            */
+
+            const noteDurationSeconds =
+                (
+                    eventDurationMs /
+                    1000
+                ) *
+                currentPattern.gate
+
+
+            const samples =
+                getSamples()
+
+
+                const tonalSample =
+                    samples.find(
+                        sample =>
+                            sample.detectedMidi !==
+                                null &&
+                            sample.detectedMidi !==
+                                undefined
+                    )
+
+
+                if (
+                    tonalSample
+                ) {
+
+                    playPitchedSample(
+                        tonalSample,
+                        midi,
+                        noteDurationSeconds
+                    )
+                }
+
+
+            eventIndex++
+
+
+            playbackTimer =
+                window.setTimeout(
+                    playNextEvent,
+                    eventDurationMs
+                )
+        }
+
+
+        playNextEvent()
     }
 
 
