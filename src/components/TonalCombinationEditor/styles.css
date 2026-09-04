@@ -386,3 +386,78 @@
             0.12
         );
 }
+
+.tonal-combination-editor__sequence-graph {
+    fill:
+        rgba(
+            56,
+            189,
+            248,
+            .05
+        );
+
+    stroke:
+        #38bdf8;
+
+    stroke-width:
+        2;
+}
+
+
+.tonal-combination-editor__sequence-point {
+    transition:
+        r .1s ease,
+        filter .1s ease;
+}
+
+
+.tonal-combination-editor__sequence-point--playing {
+    filter:
+        drop-shadow(
+            0 0 12px
+            rgba(
+                255,
+                255,
+                255,
+                .9
+            )
+        );
+}
+
+
+.tonal-combination-editor__playhead {
+    stroke:
+        #38bdf8;
+
+    stroke-width:
+        3;
+
+    stroke-linecap:
+        round;
+
+    filter:
+        drop-shadow(
+            0 0 7px
+            rgba(
+                56,
+                189,
+                248,
+                .8
+            )
+        );
+}
+
+
+.tonal-combination-editor__duration-label {
+    fill:
+        #080808;
+
+    font-size:
+        8px;
+
+    font-family:
+        monospace;
+
+    pointer-events:
+        none;
+}

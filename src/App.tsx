@@ -271,45 +271,45 @@ const [
     useState<TonalBaseNote[]>([
         {
             id: crypto.randomUUID(),
-            name: "C4",
+            name: "C2",
             interval: 0,
-            midi: 60
+            midi: 36
         },
         {
             id: crypto.randomUUID(),
-            name: "D4",
+            name: "D2",
             interval: 2,
-            midi: 62
+            midi: 38
         },
         {
             id: crypto.randomUUID(),
-            name: "E4",
+            name: "E2",
             interval: 4,
-            midi: 64
+            midi: 40
         },
         {
             id: crypto.randomUUID(),
-            name: "F4",
+            name: "F2",
             interval: 5,
-            midi: 65
+            midi: 41
         },
         {
             id: crypto.randomUUID(),
-            name: "G4",
+            name: "G2",
             interval: 7,
-            midi: 67
+            midi: 43
         },
         {
             id: crypto.randomUUID(),
-            name: "A4",
+            name: "A2",
             interval: 9,
-            midi: 69
+            midi: 45
         },
         {
             id: crypto.randomUUID(),
-            name: "B4",
+            name: "B2",
             interval: 11,
-            midi: 71
+            midi: 47
         }
     ])
 
@@ -430,9 +430,7 @@ async function handlePlayCombinationSequence(
     }
 
 
-    setActiveCombinationSequenceId(
-        null
-    )
+    
 
     setActiveCombinationEventIndex(
         -1
@@ -2777,13 +2775,7 @@ activeCombinationEventIndex={
     activeCombinationEventIndex
 }
 
-activeCombinationSequenceId={
-    activeCombinationSequenceId
-}
 
-activeCombinationEventIndex={
-    activeCombinationEventIndex
-}
 />
 
                     )

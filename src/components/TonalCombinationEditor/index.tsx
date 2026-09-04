@@ -33,6 +33,12 @@ type Props = {
         sequence:
             TonalCombinationSequence
     ) => void
+
+    activeSequenceId:
+        string | null
+
+    activeEventIndex:
+        number
 }
 
 
@@ -52,7 +58,62 @@ const BATCH_SIZE =
 const INITIAL_MELODY_LENGTH =
     4
 
+const NOTE_COLORS:
+    Record<string, string> = {
 
+    C: "#a855f7",
+    D: "#3b82f6",
+    E: "#22c55e",
+    F: "#eab308",
+    G: "#f97316",
+    A: "#ef4444",
+    B: "#ec4899"
+}
+
+
+function getNoteColor(
+    noteName: string
+): string {
+
+    const family =
+        noteName
+            .charAt(0)
+            .toUpperCase()
+
+    return (
+        NOTE_COLORS[family] ??
+        "#38bdf8"
+    )
+}
+
+
+function getDurationRadius(
+    duration: number
+): number {
+
+    switch (
+        duration
+    ) {
+
+        case 4:
+            return 22
+
+        case 2:
+            return 18
+
+        case 1:
+            return 14
+
+        case 0.5:
+            return 10
+
+        case 0.25:
+            return 7
+
+        default:
+            return 7
+    }
+}
 function randomItem<T>(
     values: T[]
 ): T {
@@ -164,9 +225,10 @@ function generateBatch(
 
 export default function TonalCombinationEditor({
     notes,
-    onPlaySequence
+    onPlaySequence,
+    activeSequenceId,
+    activeEventIndex
 }: Props) {
-
 
     const [
         durations,
@@ -206,7 +268,92 @@ export default function TonalCombinationEditor({
     const RADIUS =
         220
 
+    const activeSequence =
+    melodies.find(
+        melody =>
+            melody.id ===
+            activeSequenceId
+    ) ??
+    null
 
+const combinationIsPlaying =
+    activeSequenceId !== null &&
+    activeEventIndex >= 0
+
+    const sequencePoints =
+    activeSequence
+
+        ? activeSequence.events.map(
+            (
+                event,
+                index
+            ) => {
+
+                const angle =
+                    -Math.PI / 2 +
+                    (
+                        index /
+                        activeSequence.events.length
+                    ) *
+                    Math.PI *
+                    2
+
+
+                return {
+                    id:
+                        `${activeSequence.id}-${index}`,
+
+                    event,
+
+                    index,
+
+                    x:
+                        CENTER +
+                        Math.cos(
+                            angle
+                        ) *
+                        RADIUS,
+
+                    y:
+                        CENTER +
+                        Math.sin(
+                            angle
+                        ) *
+                        RADIUS,
+
+                    color:
+                        getNoteColor(
+                            event.note.name
+                        ),
+
+                    radius:
+                        getDurationRadius(
+                            event.duration
+                        )
+                }
+            }
+        )
+
+        : []
+
+        const sequencePolygonPoints =
+    sequencePoints
+        .map(
+            point =>
+                `${point.x},${point.y}`
+        )
+        .join(
+            " "
+        )
+
+        const activeSequencePoint =
+    combinationIsPlaying
+
+        ? sequencePoints[
+            activeEventIndex
+        ]
+
+        : undefined
     /*
         ==========================
         FIGURA GEOMÉTRICA
@@ -722,107 +869,273 @@ export default function TonalCombinationEditor({
 
                     className="tonal-combination-editor__svg"
                 >
+<circle
+    cx={
+        CENTER
+    }
+
+    cy={
+        CENTER
+    }
+
+    r={
+        RADIUS
+    }
+
+    className="tonal-combination-editor__ring"
+/>
+
+
+{
+    !activeSequence &&
+    points.length >
+    1 && (
+
+        <polygon
+            points={
+                polygonPoints
+            }
+
+            className="tonal-combination-editor__graph"
+        />
+
+    )
+}
+
+
+{
+    activeSequence &&
+    sequencePoints.length >
+    1 && (
+
+        <polygon
+            points={
+                sequencePolygonPoints
+            }
+
+            className="tonal-combination-editor__sequence-graph"
+        />
+
+    )
+    
+}
+
+
+
+
+{
+    activeSequencePoint && (
+
+        <line
+            x1={
+                CENTER
+            }
+
+            y1={
+                CENTER
+            }
+
+            x2={
+                activeSequencePoint.x
+            }
+
+            y2={
+                activeSequencePoint.y
+            }
+
+            className="tonal-combination-editor__playhead"
+        />
+
+    )
+}
+
+
+{
+    activeSequence
+
+        ? sequencePoints.map(
+            point => {
+
+                const playing =
+                    point.index ===
+                    activeEventIndex
+
+
+                return (
+
+                    <g
+                        key={
+                            point.id
+                        }
+                    >
+
+                        <circle
+                            cx={
+                                point.x
+                            }
+
+                            cy={
+                                point.y
+                            }
+
+                            r={
+                                playing
+                                    ? point.radius + 4
+                                    : point.radius
+                            }
+
+                            fill={
+                                point.color
+                            }
+
+                            stroke="#ffffff"
+
+                            strokeWidth={
+                                playing
+                                    ? 3
+                                    : 1
+                            }
+
+                            className={[
+                                "tonal-combination-editor__sequence-point",
+
+                                playing
+                                    ? "tonal-combination-editor__sequence-point--playing"
+                                    : ""
+
+                            ].join(
+                                " "
+                            )}
+                        />
+
+
+                        <text
+                            x={
+                                point.x
+                            }
+
+                            y={
+                                point.y -
+                                point.radius -
+                                12
+                            }
+
+                            textAnchor="middle"
+
+                            fill={
+                                point.color
+                            }
+
+                            className="tonal-combination-editor__label"
+                        >
+                            {
+                                point.event.note.name
+                            }
+                        </text>
+
+
+                        <text
+                            x={
+                                point.x
+                            }
+
+                            y={
+                                point.y + 4
+                            }
+
+                            textAnchor="middle"
+
+                            className="tonal-combination-editor__duration-label"
+                        >
+                            {
+                                point.event.duration
+                            }
+                        </text>
+
+                    </g>
+
+                )
+            }
+        )
+
+        : points.map(
+            point => (
+
+                <g
+                    key={
+                        point.id
+                    }
+                >
 
                     <circle
                         cx={
-                            CENTER
+                            point.x
                         }
 
                         cy={
-                            CENTER
+                            point.y
                         }
 
                         r={
-                            RADIUS
+                            9
                         }
 
-                        className="tonal-combination-editor__ring"
-                    />
-
-
-                    {
-                        points.length >
-                        1 && (
-
-                            <polygon
-                                points={
-                                    polygonPoints
-                                }
-
-                                className="tonal-combination-editor__graph"
-                            />
-
-                        )
-                    }
-
-
-                    {
-                        points.map(
-                            point => (
-
-                                <g
-                                    key={
-                                        point.id
-                                    }
-                                >
-
-                                    <circle
-                                        cx={
-                                            point.x
-                                        }
-
-                                        cy={
-                                            point.y
-                                        }
-
-                                        r={
-                                            9
-                                        }
-
-                                        className="tonal-combination-editor__point"
-                                    />
-
-
-                                    <text
-                                        x={
-                                            point.x
-                                        }
-
-                                        y={
-                                            point.y - 22
-                                        }
-
-                                        textAnchor="middle"
-
-                                        className="tonal-combination-editor__label"
-                                    >
-                                        {
-                                            point.name
-                                        }
-                                    </text>
-
-                                </g>
-
+                        fill={
+                            getNoteColor(
+                                point.name
                             )
-                        )
-                    }
-
-
-                    <circle
-                        cx={
-                            CENTER
                         }
 
-                        cy={
-                            CENTER
-                        }
-
-                        r={
-                            4
-                        }
-
-                        className="tonal-combination-editor__center"
+                        className="tonal-combination-editor__point"
                     />
+
+
+                    <text
+                        x={
+                            point.x
+                        }
+
+                        y={
+                            point.y - 22
+                        }
+
+                        textAnchor="middle"
+
+                        fill={
+                            getNoteColor(
+                                point.name
+                            )
+                        }
+
+                        className="tonal-combination-editor__label"
+                    >
+                        {
+                            point.name
+                        }
+                    </text>
+
+                </g>
+
+            )
+        )
+}
+
+
+<circle
+    cx={
+        CENTER
+    }
+
+    cy={
+        CENTER
+    }
+
+    r={
+        4
+    }
+
+    className="tonal-combination-editor__center"
+/>
 
                 </svg>
 

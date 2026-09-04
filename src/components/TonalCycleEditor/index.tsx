@@ -1,5 +1,5 @@
 import {
-    useState
+    useMemo
 } from "react"
 
 import TonalPipeline from "../TonalPipeline"
@@ -307,47 +307,71 @@ const selectionIndices =
 
 
 const selectionNotes =
-    selectionIndices
-        .map(
-            index => {
+    useMemo(
+        () => {
 
-                const note =
-                    baseNotes[
-                        index
-                    ]
+            return selectionIndices
+                .map(
+                    index => {
 
-
-                if (
-                    !note
-                ) {
-                    return null
-                }
+                        const note =
+                            baseNotes[
+                                index
+                            ]
 
 
-                return {
+                        if (
+                            !note
+                        ) {
+                            return null
+                        }
 
-                    id:
-                        note.id,
 
-                    name:
-                        note.name,
+                        return {
+                            id:
+                                note.id,
 
-                    midi:
-                        pattern.rootMidi +
-                        note.interval
-                }
-            }
-        )
-        .filter(
-            (
-                note
-            ): note is {
-                id: string
-                name: string
-                midi: number
-            } =>
-                note !== null
-        )
+                            name:
+                                note.name,
+
+                            midi:
+                                note.midi ??
+                                (
+                                    pattern.rootMidi +
+                                    note.interval
+                                )
+                        }
+                    }
+                )
+                .filter(
+                    (
+                        note
+                    ): note is {
+                        id: string
+                        name: string
+                        midi: number
+                    } =>
+                        note !==
+                        null
+                )
+
+        },
+
+        [
+            baseNotes,
+            pattern.rootMidi,
+
+            /*
+                Esto representa realmente
+                qué posiciones forman
+                Selection.
+            */
+
+            selectionIndices.join(
+                ","
+            )
+        ]
+    )
     /*
         ESTADÍSTICAS
     */
