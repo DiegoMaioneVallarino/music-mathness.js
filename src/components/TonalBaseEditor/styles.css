@@ -606,7 +606,7 @@
         linear-gradient(
             90deg,
             #c7a6d8,
-            #a96cd0
+             #a96cd0
         );
 
     border-color:
@@ -629,4 +629,116 @@
         #c760ff;
 
     color: #fff;
+}
+
+.tonal-base-editor__playhead line {
+    stroke:
+        #c14cff;
+
+    stroke-width:
+        3;
+
+    stroke-linecap:
+        round;
+
+    filter:
+        drop-shadow(
+            0 0 6px
+            rgba(
+                193,
+                76,
+                255,
+                .75
+            )
+        );
+}
+
+
+.tonal-base-editor__playhead circle {
+    fill:
+        #e3a5ff;
+
+    stroke:
+        #ffffff;
+
+    stroke-width:
+        1;
+}
+
+.tonal-base-editor__svg {
+    width:
+        min(
+            90%,
+            540px
+        );
+
+    max-height:
+        560px;
+
+    height:
+        auto;
+}
+
+.tonal-base-editor__point--playing {
+    filter:
+        drop-shadow(
+            0 0 12px
+            currentColor
+        );
+}
+
+.tonal-base-editor__point {
+    transition:
+        r .12s ease,
+        filter .12s ease,
+        stroke-width .12s ease;
+}
+
+
+.tonal-base-editor__point--playing {
+    filter:
+        drop-shadow(
+            0 0 12px
+            rgba(
+                255,
+                255,
+                255,
+                .85
+            )
+        );
+}
+
+
+.tonal-base-editor__playhead line {
+    stroke:
+        #c14cff;
+
+    stroke-width:
+        3;
+
+    stroke-linecap:
+        round;
+
+    filter:
+        drop-shadow(
+            0 0 7px
+            rgba(
+                193,
+                76,
+                255,
+                .85
+            )
+        );
+}
+
+
+.tonal-base-editor__playhead circle {
+    fill:
+        #e4a7ff;
+
+    stroke:
+        #ffffff;
+
+    stroke-width:
+        1.5;
 }

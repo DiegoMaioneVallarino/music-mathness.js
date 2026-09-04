@@ -737,13 +737,21 @@ const selectionNotes =
         {
             activeStage === "base" && (
 
-        <TonalBaseEditor
+    <TonalBaseEditor
     notes={
         baseNotes
     }
 
     onNotesChange={
         onBaseNotesChange
+    }
+
+    playbackProgress={
+        playbackProgress
+    }
+
+    isPlaying={
+        isPlaying
     }
 />
 

@@ -14,11 +14,19 @@ export type TonalBaseNote = {
 
 
 type Props = {
-    notes: TonalBaseNote[]
+    notes:
+        TonalBaseNote[]
 
     onNotesChange: (
-        notes: TonalBaseNote[]
+        notes:
+            TonalBaseNote[]
     ) => void
+
+    playbackProgress:
+        number
+
+    isPlaying:
+        boolean
 }
 
 
@@ -171,7 +179,9 @@ function getNoteColor(
 
 export default function TonalBaseEditor({
     notes,
-    onNotesChange
+    onNotesChange,
+    playbackProgress,
+    isPlaying
 }: Props) {
 
 
@@ -184,15 +194,14 @@ export default function TonalBaseEditor({
         )
 
 
-    const SIZE =
-        600
+        const SIZE =
+            600
 
-    const CENTER =
-        SIZE / 2
+        const CENTER =
+            SIZE / 2
 
-    const RADIUS =
-        220
-
+        const RADIUS =
+            185
 
     /*
         El piano solamente está bloqueado
@@ -208,30 +217,29 @@ export default function TonalBaseEditor({
         CÍRCULO DE LA BASE
     */
 
-    const points =
-        notes.map(
-            (
-                note,
-                index
-            ) => {
-const color =
-    getNoteColor(
-        note.name
-    )
-                const angle =
-                    -Math.PI / 2 +
-                    (
-                        index /
-                        notes.length
-                    ) *
-                    Math.PI *
-                    2
+const points =
+    notes.map(
+        (
+            note,
+            index
+        ) => {
 
+            const angle =
+                -Math.PI / 2 +
+                (
+                    index /
+                    notes.length
+                ) *
+                Math.PI *
+                2
 
-                return {
+           return {
     ...note,
 
-    color,
+    color:
+        getNoteColor(
+            note.name
+        ),
 
     x:
         CENTER +
@@ -247,9 +255,56 @@ const color =
         ) *
         RADIUS
 }
-            }
-        )
+        }
+    )
 
+
+/*
+    Qué nota está siendo
+    atravesada por el playback
+*/
+
+const activeNoteIndex =
+    notes.length > 0
+
+        ? Math.floor(
+            playbackProgress *
+            notes.length
+        ) %
+        notes.length
+
+        : -1
+
+
+/*
+    Posición de la manecilla
+*/
+
+const playheadAngle =
+    -Math.PI / 2 +
+    playbackProgress *
+    Math.PI *
+    2
+
+
+const playheadLength =
+    RADIUS - 18
+
+
+const playheadX =
+    CENTER +
+    Math.cos(
+        playheadAngle
+    ) *
+    playheadLength
+
+
+const playheadY =
+    CENTER +
+    Math.sin(
+        playheadAngle
+    ) *
+    playheadLength
         
 
 
@@ -836,9 +891,18 @@ const color =
         NODOS DE LA BASE
     */}
 
-    {
-        points.map(
-            point => (
+   {
+    points.map(
+        (
+            point,
+            index
+        ) => {
+
+            const active =
+                isPlaying &&
+                index === activeNoteIndex
+
+            return (
 
                 <g
                     key={
@@ -856,7 +920,9 @@ const color =
                         }
 
                         r={
-                            10
+                            active
+                                ? 14
+                                : 10
                         }
 
                         fill={
@@ -866,7 +932,15 @@ const color =
                         stroke="#ffffff"
 
                         strokeWidth={
-                            1
+                            active
+                                ? 3
+                                : 1
+                        }
+
+                        className={
+                            active
+                                ? "tonal-base-editor__point tonal-base-editor__point--playing"
+                                : "tonal-base-editor__point"
                         }
                     />
 
@@ -896,8 +970,9 @@ const color =
                 </g>
 
             )
-        )
-    }
+        }
+    )
+}
 
 
     {/*
@@ -919,7 +994,50 @@ const color =
 
         fill="#555"
     />
+{
+    isPlaying && (
 
+        <g
+            className="tonal-base-editor__playhead"
+        >
+
+            <line
+                x1={
+                    CENTER
+                }
+
+                y1={
+                    CENTER
+                }
+
+                x2={
+                    playheadX
+                }
+
+                y2={
+                    playheadY
+                }
+            />
+
+
+            <circle
+                cx={
+                    playheadX
+                }
+
+                cy={
+                    playheadY
+                }
+
+                r={
+                    6
+                }
+            />
+
+        </g>
+
+    )
+}
 </svg>
 
             </div>
