@@ -313,6 +313,26 @@ const [
         }
     ])
 
+
+
+const [
+    activeCombinationSequenceId,
+    setActiveCombinationSequenceId
+] =
+    useState<string | null>(
+        null
+    )
+
+
+const [
+    activeCombinationEventIndex,
+    setActiveCombinationEventIndex
+] =
+    useState(
+        -1
+    )
+
+
 const [
     tonalSampleId,
     setTonalSampleId
@@ -348,29 +368,39 @@ async function handlePlayCombinationSequence(
     const pitchedSample =
         samplesRef.current.find(
             sample =>
-                sample.detectedMidi !==
-                undefined &&
-                sample.detectedMidi !==
-                null
+                sample.id ===
+                tonalSampleId
         )
 
 
     if (
         !pitchedSample
     ) {
-
-        console.warn(
-            "No hay ningún sample con pitch detectado."
-        )
-
         return
     }
 
 
+    setActiveCombinationSequenceId(
+        sequence.id
+    )
+
+
     for (
-        const event
-        of sequence.events
+        let index = 0;
+        index < sequence.events.length;
+        index++
     ) {
+
+        const event =
+            sequence.events[
+                index
+            ]
+
+
+        setActiveCombinationEventIndex(
+            index
+        )
+
 
         const durationSeconds =
             event.duration *
@@ -392,13 +422,21 @@ async function handlePlayCombinationSequence(
 
                 window.setTimeout(
                     resolve,
-
                     durationSeconds *
                     1000
                 )
             }
         )
     }
+
+
+    setActiveCombinationSequenceId(
+        null
+    )
+
+    setActiveCombinationEventIndex(
+        -1
+    )
 }
         useEffect(() => {
 
@@ -2729,6 +2767,22 @@ baseNotes={
 
 onBaseNotesChange={
     setTonalBaseNotes
+}
+
+activeCombinationSequenceId={
+    activeCombinationSequenceId
+}
+
+activeCombinationEventIndex={
+    activeCombinationEventIndex
+}
+
+activeCombinationSequenceId={
+    activeCombinationSequenceId
+}
+
+activeCombinationEventIndex={
+    activeCombinationEventIndex
 }
 />
 

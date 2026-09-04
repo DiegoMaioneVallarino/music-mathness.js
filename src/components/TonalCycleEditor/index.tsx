@@ -138,6 +138,12 @@ onBaseNotesChange: (
     notes:
         TonalBaseNote[]
 ) => void
+
+activeCombinationSequenceId:
+    string | null
+
+activeCombinationEventIndex:
+    number
 }
 
 
@@ -204,6 +210,9 @@ export default function TonalCycleEditor({
     onCloseLastStepChange,
     onSelectFigure,
     onAddFigure,
+
+    activeCombinationSequenceId,
+    activeCombinationEventIndex,
 
     onRootChange,
     onGateChange,
@@ -1697,6 +1706,14 @@ const selectionNotes =
 
             onPlaySequence={
                 onPlayCombinationSequence
+            }
+
+            activeSequenceId={
+                activeCombinationSequenceId
+            }
+
+            activeEventIndex={
+                activeCombinationEventIndex
             }
         />
 
