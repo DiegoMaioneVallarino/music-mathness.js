@@ -1,0 +1,632 @@
+.tonal-base-editor {
+    display: grid;
+
+    grid-template-columns:
+        225px
+        300px
+        minmax(320px, 1fr);
+
+    min-height:
+        650px;
+
+    background:
+        #090909;
+
+    border:
+        1px solid #272727;
+}
+
+
+/*
+    =========================
+    BASE
+    =========================
+*/
+
+.tonal-base-editor__sidebar {
+    display: flex;
+
+    flex-direction:
+        column;
+
+    padding:
+        16px;
+
+    border-right:
+        1px solid #292929;
+
+    background:
+        #101010;
+}
+
+
+.tonal-base-editor__title {
+    margin-bottom:
+        18px;
+
+    color:
+        #b344ff;
+
+    font-size:
+        12px;
+
+    letter-spacing:
+        1px;
+}
+
+
+.tonal-base-editor__notes {
+    display: flex;
+
+    flex-direction:
+        column;
+
+    gap:
+        7px;
+
+    flex:
+        1;
+}
+
+
+.tonal-base-note {
+    display: grid;
+
+    grid-template-columns:
+        22px
+        1fr
+        30px;
+
+    align-items:
+        center;
+
+    gap:
+        6px;
+}
+
+
+.tonal-base-note__index {
+    color:
+        #666;
+
+    font-size:
+        9px;
+}
+
+
+.tonal-base-note__select {
+    display: flex;
+
+    justify-content:
+        space-between;
+
+    align-items:
+        center;
+
+    min-height:
+        38px;
+
+    padding:
+        0 10px;
+
+    background:
+        #111;
+
+    border:
+        1px solid #303030;
+
+    color:
+        #eee;
+
+    font-family:
+        inherit;
+
+    cursor:
+        pointer;
+}
+
+
+.tonal-base-note__select strong {
+    font-size:
+        13px;
+
+    font-weight:
+        500;
+}
+
+
+.tonal-base-note__select span {
+    color:
+        #666;
+
+    font-size:
+        8px;
+}
+
+
+.tonal-base-note__select:hover {
+    border-color:
+        #8e35d0;
+}
+
+
+.tonal-base-note--selected
+.tonal-base-note__select {
+    background:
+        #291542;
+
+    border-color:
+        #ad43ff;
+
+    color:
+        #e1b2ff;
+}
+
+
+.tonal-base-note__remove {
+    width:
+        30px;
+
+    height:
+        30px;
+
+    border:
+        1px solid #303030;
+
+    background:
+        #111;
+
+    color:
+        #777;
+
+    cursor:
+        pointer;
+}
+
+
+.tonal-base-note__remove:hover {
+    color:
+        #fff;
+
+    border-color:
+        #a43dff;
+}
+
+
+.tonal-base-editor__add {
+    min-height:
+        36px;
+
+    border:
+        1px solid #9139d3;
+
+    background:
+        #181020;
+
+    color:
+        #c66bff;
+
+    font-family:
+        inherit;
+
+    font-size:
+        10px;
+
+    letter-spacing:
+        1px;
+
+    cursor:
+        pointer;
+}
+
+
+.tonal-base-editor__add:hover {
+    background:
+        #251438;
+}
+
+
+/*
+    =========================
+    PIANO PANEL
+    =========================
+*/
+
+.tonal-base-editor__piano-panel {
+    min-width:
+        0;
+
+    padding:
+        14px;
+
+    border-right:
+        1px solid #292929;
+
+    background:
+        #0c0c0c;
+
+    opacity:
+        .42;
+
+    transition:
+        opacity .15s ease;
+}
+
+
+.tonal-base-editor__piano-panel--active {
+    opacity:
+        1;
+}
+
+
+.tonal-base-editor__piano-header {
+    display: flex;
+
+    justify-content:
+        space-between;
+
+    align-items:
+        center;
+
+    margin-bottom:
+        10px;
+
+    color:
+        #666;
+
+    font-size:
+        9px;
+
+    letter-spacing:
+        1px;
+}
+
+
+.tonal-base-editor__piano-header strong {
+    color:
+        #b74dff;
+
+    font-weight:
+        500;
+}
+
+
+/*
+    =========================
+    PIANO PANEL
+    =========================
+*/
+
+.tonal-base-editor__piano-panel {
+    min-width: 0;
+
+    padding: 14px;
+
+    border-right: 1px solid #292929;
+
+    background: #0c0c0c;
+
+    opacity: .42;
+
+    transition:
+        opacity .15s ease;
+}
+
+
+.tonal-base-editor__piano-panel--active {
+    opacity: 1;
+}
+
+
+.tonal-base-editor__piano-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 10px;
+
+    color: #666;
+
+    font-size: 9px;
+
+    letter-spacing: 1px;
+}
+
+
+.tonal-base-editor__piano-header strong {
+    color: #b74dff;
+
+    font-weight: 500;
+}
+
+
+/*
+    =========================
+    PIANO SCROLL WINDOW
+    =========================
+*/
+
+.tonal-piano {
+    --white-key-height: 34px;
+    --black-key-height: 22px;
+
+    --black-key-offset: 23px;
+
+    position: relative;
+
+    width: 100%;
+
+    max-height: 500px;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    padding-right: 6px;
+
+    user-select: none;
+
+    scrollbar-width: thin;
+
+    scrollbar-color:
+        #7130a0
+        #111;
+}
+
+
+/*
+    Scrollbar Chrome / Edge
+*/
+
+.tonal-piano::-webkit-scrollbar {
+    width: 8px;
+}
+
+
+.tonal-piano::-webkit-scrollbar-track {
+    background: #0d0d0d;
+
+    border-left:
+        1px solid #202020;
+}
+
+
+.tonal-piano::-webkit-scrollbar-thumb {
+    background: #5d267f;
+
+    border:
+        2px solid #0d0d0d;
+
+    border-radius:
+        8px;
+}
+
+
+.tonal-piano::-webkit-scrollbar-thumb:hover {
+    background: #9c3ce2;
+}
+
+
+.tonal-piano--locked {
+    pointer-events: none;
+}
+
+
+/*
+    =========================
+    TECLAS NATURALES
+    =========================
+*/
+
+.tonal-piano__white-key {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    width: 100%;
+
+    height:
+        var(--white-key-height);
+
+    flex-shrink: 0;
+
+    padding:
+        0 12px
+        0 145px;
+
+    margin: 0;
+
+    border:
+        1px solid #3a2b43;
+
+    border-bottom: 0;
+
+    background:
+        linear-gradient(
+            90deg,
+            #d8cedd 0%,
+            #c8bacf 100%
+        );
+
+    color: #26162f;
+
+    font-family: inherit;
+
+    font-size: 9px;
+
+    cursor: pointer;
+
+    box-sizing: border-box;
+
+    transition:
+        background .08s ease,
+        border-color .08s ease;
+}
+
+
+.tonal-piano__white-key:last-of-type {
+    border-bottom:
+        1px solid #3a2b43;
+}
+
+
+.tonal-piano__white-key span {
+    font-weight: 600;
+}
+
+
+.tonal-piano__white-key small {
+    color: #6d5877;
+
+    font-size: 7px;
+}
+
+
+/*
+    Tecla natural activa
+*/
+
+.tonal-piano__white-key--active {
+    background:
+        linear-gradient(
+            90deg,
+            #8732cb,
+            #ba55ff
+        );
+
+    color: #fff;
+
+    border-color: #d291ff;
+}
+
+
+.tonal-piano__white-key--active small {
+    color: #f0dfff;
+}
+
+
+/*
+    =========================
+    CAPA DE SEMITONOS
+    =========================
+*/
+
+.tonal-piano__black-layer {
+    position: absolute;
+
+    inset: 0;
+
+    pointer-events: none;
+}
+
+
+/*
+    Teclas negras / moradas
+*/
+
+.tonal-piano__black-key {
+    position: absolute;
+
+    left: 0;
+
+    width: 61%;
+
+    height:
+        var(--black-key-height);
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: flex-end;
+
+    padding:
+        0 10px;
+
+    border:
+        1px solid #7d359e;
+
+    background:
+        linear-gradient(
+            90deg,
+            #130918,
+            #32123f
+        );
+
+    color: #cb83ef;
+
+    font-family: inherit;
+
+    font-size: 8px;
+
+    cursor: pointer;
+
+    pointer-events: auto;
+
+    z-index: 3;
+
+    box-sizing: border-box;
+
+    transition:
+        background .08s ease,
+        width .08s ease,
+        border-color .08s ease;
+}
+
+
+/*
+    Semitono activo
+*/
+
+.tonal-piano__black-key--active {
+    background:
+        linear-gradient(
+            90deg,
+            #7020a2,
+            #bd4cff
+        );
+
+    border-color:
+        #e4a9ff;
+
+    color: #fff;
+}
+
+
+/*
+    Hover
+*/
+
+.tonal-piano--active
+.tonal-piano__white-key:hover {
+    background:
+        linear-gradient(
+            90deg,
+            #c7a6d8,
+            #a96cd0
+        );
+
+    border-color:
+        #a044dc;
+}
+
+
+.tonal-piano--active
+.tonal-piano__black-key:hover {
+    width: 64%;
+
+    background:
+        linear-gradient(
+            90deg,
+            #39104b,
+            #78319b
+        );
+
+    border-color:
+        #c760ff;
+
+    color: #fff;
+}

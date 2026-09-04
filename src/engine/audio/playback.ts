@@ -159,7 +159,7 @@ function playMidiNote(
     )
 }
 
-function playPitchedSample(
+export function playPitchedSample(
     sample: Sample,
     targetMidi: number,
     durationSeconds: number

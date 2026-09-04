@@ -32,6 +32,7 @@ import {
     playCyclePatternLoop,
     playTonalCyclePatternLoop,
     playTimelineLoop,
+    playPitchedSample,
     stopPattern
 } from "./engine/audio/playback"
 
@@ -47,7 +48,9 @@ import type {
     Pattern,
     TonalFigureMode
 } from "./engine/patterns/types"
-
+import type {
+    TonalCombinationSequence
+} from "./components/TonalCombinationEditor"
 import type {
     TimelineTrack
 } from "./engine/timeline/types"
@@ -83,7 +86,15 @@ import {
 
 import "./App.css"
 
+import type {
+    TonalPipelineStage
+} from "./components/TonalPipeline"
+
 import TonalCycleEditor from "./components/TonalCycleEditor"
+
+import type {
+    TonalBaseNote
+} from "./components/TonalBaseEditor"
 
 const BPM = 130
 
@@ -180,7 +191,13 @@ const playbackStartRef =
         null
     )
 
-
+const tonalBasePlaybackCancelRef =
+    useRef<
+        (() => void) |
+        null
+    >(
+        null
+    )
 
 const playbackDurationRef =
     useRef(0)
@@ -239,6 +256,71 @@ const playbackDurationRef =
 
     ])
 
+
+      const [
+    tonalStage,
+    setTonalStage
+] =
+    useState<TonalPipelineStage>(
+        "base"
+    )
+const [
+    tonalBaseNotes,
+    setTonalBaseNotes
+] =
+    useState<TonalBaseNote[]>([
+        {
+            id: crypto.randomUUID(),
+            name: "C4",
+            interval: 0,
+            midi: 60
+        },
+        {
+            id: crypto.randomUUID(),
+            name: "D4",
+            interval: 2,
+            midi: 62
+        },
+        {
+            id: crypto.randomUUID(),
+            name: "E4",
+            interval: 4,
+            midi: 64
+        },
+        {
+            id: crypto.randomUUID(),
+            name: "F4",
+            interval: 5,
+            midi: 65
+        },
+        {
+            id: crypto.randomUUID(),
+            name: "G4",
+            interval: 7,
+            midi: 67
+        },
+        {
+            id: crypto.randomUUID(),
+            name: "A4",
+            interval: 9,
+            midi: 69
+        },
+        {
+            id: crypto.randomUUID(),
+            name: "B4",
+            interval: 11,
+            midi: 71
+        }
+    ])
+
+const [
+    tonalSampleId,
+    setTonalSampleId
+] =
+    useState<string | null>(
+        null
+    )
+
           const patternsRef =
         useRef(patterns)
 
@@ -258,7 +340,66 @@ const playbackDurationRef =
 
     samplesRef.current =
         samples
+async function handlePlayCombinationSequence(
+    sequence:
+        TonalCombinationSequence
+) {
 
+    const pitchedSample =
+        samplesRef.current.find(
+            sample =>
+                sample.detectedMidi !==
+                undefined &&
+                sample.detectedMidi !==
+                null
+        )
+
+
+    if (
+        !pitchedSample
+    ) {
+
+        console.warn(
+            "No hay ningún sample con pitch detectado."
+        )
+
+        return
+    }
+
+
+    for (
+        const event
+        of sequence.events
+    ) {
+
+        const durationSeconds =
+            event.duration *
+            (
+                60 /
+                BPM
+            )
+
+
+        playPitchedSample(
+            pitchedSample,
+            event.note.midi,
+            durationSeconds
+        )
+
+
+        await new Promise<void>(
+            resolve => {
+
+                window.setTimeout(
+                    resolve,
+
+                    durationSeconds *
+                    1000
+                )
+            }
+        )
+    }
+}
         useEffect(() => {
 
     if (!isPlaying) {
@@ -1586,7 +1727,160 @@ function handleTonalGateChange(
             )
     )
 }
+async function playCurrentTonalBase() {
 
+    const sample =
+        samplesRef.current.find(
+            sample =>
+                sample.id ===
+                tonalSampleId
+        )
+console.log(
+    "TONAL BASE DEBUG",
+    {
+        tonalStage,
+        tonalSampleId,
+        sample,
+        notes:
+            tonalBaseNotes
+    }
+)
+
+    if (
+        !sample
+    ) {
+
+        console.warn(
+            "BASE: no hay tonal sample seleccionado"
+        )
+
+        return
+    }
+
+
+    if (
+        sample.detectedMidi ===
+            undefined ||
+        sample.detectedMidi ===
+            null
+    ) {
+
+        console.warn(
+            "BASE: el sample no tiene pitch detectado"
+        )
+
+        return
+    }
+
+
+    const playableNotes =
+        tonalBaseNotes.filter(
+            (
+                note
+            ): note is TonalBaseNote & {
+                midi: number
+            } =>
+                note.midi !==
+                undefined
+        )
+
+
+    if (
+        playableNotes.length ===
+        0
+    ) {
+        return
+    }
+
+
+    stopPattern()
+
+
+    /*
+        De momento:
+
+        cada nodo del módulo
+        ocupa 1 beat.
+    */
+
+    const beatSeconds =
+        60 /
+        BPM
+
+
+    /*
+        Una vuelta completa:
+
+        N posiciones
+        =
+        N beats
+    */
+
+    startPlaybackClock(
+        playableNotes.length
+    )
+
+
+    /*
+        Creamos una referencia
+        que nos permita cancelar
+        el loop con STOP.
+    */
+
+    let cancelled =
+        false
+
+
+    /*
+        Guardamos la función de cancelación.
+
+        La añadimos enseguida como ref.
+    */
+
+    tonalBasePlaybackCancelRef.current =
+        () => {
+
+            cancelled =
+                true
+        }
+
+
+    while (
+        !cancelled
+    ) {
+
+        for (
+            const note
+            of playableNotes
+        ) {
+
+            if (
+                cancelled
+            ) {
+                return
+            }
+
+
+            playPitchedSample(
+                sample,
+                note.midi,
+                beatSeconds
+            )
+
+
+            await new Promise<void>(
+                resolve => {
+
+                    window.setTimeout(
+                        resolve,
+                        beatSeconds *
+                        1000
+                    )
+                }
+            )
+        }
+    }
+}
 function handlePlay() {
 
     /*
@@ -1777,48 +2071,110 @@ if (
     "tonal-cycle"
 ) {
 
-    const patternId =
-        selectedPattern.id
+    /*
+        =========================
+        STAGE 1 — TONAL BASE
+        =========================
+
+        Aquí NO usamos el antiguo
+        TonalCyclePattern.
+
+        Reproducimos directamente
+        las posiciones MIDI elegidas
+        en nuestro piano.
+    */
+
+    if (
+        tonalStage ===
+        "base"
+    ) {
+
+        void playCurrentTonalBase()
+
+        return
+    }
 
 
-    startPlaybackClock(
-        selectedPattern.cycleBeats
-    )
+    /*
+        =========================
+        STAGE 2 — SELECTION
+        =========================
+
+        Por ahora dejamos funcionando
+        el playback anterior.
+
+        En el siguiente paso lo
+        conectaremos a baseNotes.
+    */
+
+    if (
+        tonalStage ===
+        "selection"
+    ) {
+
+        const patternId =
+            selectedPattern.id
 
 
- playTonalCyclePatternLoop(
-
-    () => {
-
-        const pattern =
-            patternsRef.current.find(
-                pattern =>
-                    pattern.id ===
-                    patternId
-            )
+        startPlaybackClock(
+            selectedPattern.cycleBeats
+        )
 
 
-        if (
-            !pattern ||
-            pattern.type !==
-                "tonal-cycle"
-        ) {
+        playTonalCyclePatternLoop(
 
-            return undefined
-        }
+            () => {
 
-
-        return pattern
-    },
-
-    BPM,
-
-    () =>
-        samplesRef.current
-)
+                const pattern =
+                    patternsRef.current.find(
+                        pattern =>
+                            pattern.id ===
+                            patternId
+                    )
 
 
-    return
+                if (
+                    !pattern ||
+                    pattern.type !==
+                        "tonal-cycle"
+                ) {
+
+                    return undefined
+                }
+
+
+                return pattern
+            },
+
+            BPM,
+
+            () =>
+                samplesRef.current
+        )
+
+
+        return
+    }
+
+
+    /*
+        =========================
+        STAGE 3 — COMBINATION
+        =========================
+
+        No hacemos playback global.
+
+        Cada secuencia tiene
+        su propio botón ▶.
+    */
+
+    if (
+        tonalStage ===
+        "combination"
+    ) {
+
+        return
+    }
 }
 
 
@@ -1854,7 +2210,10 @@ function handleCreateTonalCyclePattern() {
  function handleStop() {
 
     stopPattern()
+    tonalBasePlaybackCancelRef.current?.()
 
+    tonalBasePlaybackCancelRef.current =
+    null
 
     setCurrentStep(
         null
@@ -2341,7 +2700,36 @@ function formatPlaybackTime(
     onOctaveSpanChange={
         handleTonalOctaveSpanChange
     }
+    activeStage={
+    tonalStage
+}
 
+      onStageChange={
+          setTonalStage
+      }
+
+      samples={
+          samples
+      }
+
+      tonalSampleId={
+          tonalSampleId
+      }
+
+      onTonalSampleChange={
+          setTonalSampleId
+      }
+  onPlayCombinationSequence={
+    handlePlayCombinationSequence
+}
+
+baseNotes={
+    tonalBaseNotes
+}
+
+onBaseNotesChange={
+    setTonalBaseNotes
+}
 />
 
                     )

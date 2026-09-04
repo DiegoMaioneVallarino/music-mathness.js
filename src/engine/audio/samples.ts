@@ -23,5 +23,13 @@ export const DEFAULT_SAMPLES: Sample[] = [
         id: "hat_01",
         name: "hat.wav",
         url: "/samples/hat.wav"
+    },
+    {
+        id: "synth",
+        name: "synth.wav",
+        url: "/samples/synth.wav",
+        detectedMidi: 36,
+        detectedFrequency: 65.5737,
+        pitchConfidence: 1
     }
 ]

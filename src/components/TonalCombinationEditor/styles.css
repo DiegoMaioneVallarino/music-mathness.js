@@ -1,0 +1,388 @@
+.tonal-combination-editor {
+    display: grid;
+
+    grid-template-columns:
+        300px
+        1fr;
+
+    min-height: 620px;
+
+    background:
+        #090909;
+}
+
+
+.tonal-combination-editor__sidebar {
+    display: flex;
+    flex-direction: column;
+
+    padding: 18px;
+
+    border-right:
+        1px solid #292929;
+
+    background:
+        #101010;
+
+    overflow: hidden;
+}
+
+
+.tonal-combination-editor__title {
+    margin-bottom: 16px;
+
+    color:
+        #38bdf8;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    letter-spacing:
+        1.5px;
+}
+
+
+.tonal-combination-editor__info {
+    display: grid;
+
+    grid-template-columns:
+        1fr
+        auto;
+
+    gap: 7px;
+
+    margin-bottom: 16px;
+
+    padding-bottom: 14px;
+
+    border-bottom:
+        1px solid #292929;
+
+    font-size: 10px;
+}
+
+
+.tonal-combination-editor__info span {
+    color:
+        #666;
+}
+
+
+.tonal-combination-editor__info strong {
+    color:
+        #38bdf8;
+}
+
+
+.tonal-combination-editor__list {
+    display: flex;
+    flex-direction: column;
+
+    gap: 4px;
+
+    overflow-y: auto;
+
+    max-height: 500px;
+}
+
+
+.tonal-combination-sequence {
+    display: grid;
+
+    grid-template-columns:
+        34px
+        1fr;
+
+    align-items: center;
+
+    min-height: 30px;
+
+    padding: 0 8px;
+
+    border:
+        1px solid #222;
+
+    background:
+        #0a0a0a;
+
+    font-size: 11px;
+}
+
+
+.tonal-combination-sequence:hover {
+    border-color:
+        #075985;
+
+    background:
+        rgba(
+            56,
+            189,
+            248,
+            0.05
+        );
+}
+
+
+.tonal-combination-sequence__index {
+    color:
+        #555;
+}
+
+
+.tonal-combination-sequence strong {
+    color:
+        #bbb;
+
+    font-weight:
+        500;
+}
+
+
+.tonal-combination-editor__visual {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+.tonal-combination-editor__counter {
+    position: absolute;
+
+    top: 16px;
+    right: 18px;
+
+    color:
+        #38bdf8;
+
+    font-size: 10px;
+
+    letter-spacing:
+        1px;
+}
+
+
+.tonal-combination-editor__svg {
+    width: min(
+        700px,
+        95%
+    );
+
+    height: auto;
+}
+
+
+.tonal-combination-editor__ring {
+    fill: none;
+
+    stroke:
+        #163847;
+
+    stroke-width:
+        2;
+}
+
+
+.tonal-combination-editor__graph {
+    fill:
+        rgba(
+            56,
+            189,
+            248,
+            0.05
+        );
+
+    stroke:
+        #38bdf8;
+
+    stroke-width:
+        2;
+
+    stroke-linejoin:
+        round;
+}
+
+
+.tonal-combination-editor__point {
+    fill:
+        #38bdf8;
+
+    stroke:
+        #bae6fd;
+
+    stroke-width:
+        1;
+}
+
+
+.tonal-combination-editor__label {
+    fill:
+        #bae6fd;
+
+    font-size:
+        13px;
+}
+
+
+.tonal-combination-editor__center {
+    fill:
+        #38bdf8;
+}
+.tonal-combination-control {
+    padding: 12px 0;
+
+    border-bottom:
+        1px solid #292929;
+}
+
+
+.tonal-combination-control__label {
+    margin-bottom: 8px;
+
+    color:
+        #666;
+
+    font-size:
+        10px;
+
+    letter-spacing:
+        1px;
+}
+
+
+.tonal-combination-durations {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 5px;
+}
+
+
+.tonal-duration-button {
+    min-width: 42px;
+
+    padding: 6px 8px;
+
+    border:
+        1px solid #333;
+
+    background:
+        #0a0a0a;
+
+    color:
+        #666;
+
+    font-family:
+        inherit;
+
+    cursor:
+        pointer;
+}
+
+
+.tonal-duration-button--active {
+    border-color:
+        #38bdf8;
+
+    background:
+        rgba(
+            56,
+            189,
+            248,
+            0.1
+        );
+
+    color:
+        #38bdf8;
+}
+
+
+.tonal-combination-level {
+    display: grid;
+
+    grid-template-columns:
+        32px
+        1fr
+        32px;
+
+    align-items: center;
+
+    gap: 6px;
+}
+
+
+.tonal-combination-level button {
+    height: 30px;
+
+    border:
+        1px solid #333;
+
+    background:
+        #0a0a0a;
+
+    color:
+        #38bdf8;
+
+    cursor:
+        pointer;
+}
+
+
+.tonal-combination-level strong {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    height: 30px;
+
+    border:
+        1px solid #222;
+
+    background:
+        #080808;
+
+    color:
+        #38bdf8;
+}
+
+.tonal-combination-sequence {
+    grid-template-columns:
+        28px
+        30px
+        1fr;
+}
+
+
+.tonal-combination-sequence__play {
+    width: 22px;
+    height: 22px;
+
+    border:
+        1px solid #075985;
+
+    background:
+        #071218;
+
+    color:
+        #38bdf8;
+
+    cursor: pointer;
+
+    font-size:
+        9px;
+}
+
+
+.tonal-combination-sequence__play:hover {
+    border-color:
+        #38bdf8;
+
+    background:
+        rgba(
+            56,
+            189,
+            248,
+            0.12
+        );
+}

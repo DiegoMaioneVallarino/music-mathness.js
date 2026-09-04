@@ -1,0 +1,172 @@
+.tonal-pipeline {
+    display: flex;
+    align-items: center;
+
+    width: 100%;
+
+    border: 1px solid #292929;
+
+    background:
+        #0d0d0d;
+
+    min-height: 58px;
+}
+
+
+.tonal-pipeline__stage-wrapper {
+    display: flex;
+    align-items: center;
+
+    flex: 1;
+}
+
+
+.tonal-pipeline__stage {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 10px;
+
+    flex: 1;
+
+    min-height: 56px;
+
+    border: none;
+
+    background:
+        transparent;
+
+    color:
+        #666;
+
+    cursor: pointer;
+
+    font-family:
+        inherit;
+
+    transition:
+        120ms ease;
+}
+
+
+.tonal-pipeline__stage:hover {
+    background:
+        #141414;
+
+    color:
+        #aaa;
+}
+
+
+.tonal-pipeline__number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 22px;
+    height: 22px;
+
+    border:
+        1px solid
+        currentColor;
+
+    border-radius:
+        50%;
+
+    font-size:
+        11px;
+
+    font-weight:
+        700;
+}
+
+
+.tonal-pipeline__label {
+    font-size:
+        15px;
+
+    font-weight:
+        600;
+}
+
+
+.tonal-pipeline__connector {
+    width: 32px;
+    height: 1px;
+
+    background:
+        #333;
+}
+
+
+/*
+    BASE
+*/
+
+.tonal-pipeline__stage--base.tonal-pipeline__stage--active {
+    color:
+        #a855f7;
+
+    background:
+        rgba(
+            168,
+            85,
+            247,
+            0.08
+        );
+}
+
+
+/*
+    SELECTION
+*/
+
+.tonal-pipeline__stage--selection.tonal-pipeline__stage--active {
+    color:
+        #a3e635;
+
+    background:
+        rgba(
+            163,
+            230,
+            53,
+            0.08
+        );
+}
+
+
+/*
+    COMBINATION
+*/
+
+.tonal-pipeline__stage--combination.tonal-pipeline__stage--active {
+    color:
+        #38bdf8;
+
+    background:
+        rgba(
+            56,
+            189,
+            248,
+            0.08
+        );
+}
+
+
+.tonal-pipeline__stage--active::after {
+    content: "";
+
+    position: absolute;
+
+    left: 12%;
+    right: 12%;
+    bottom: 0;
+
+    height: 2px;
+
+    background:
+        currentColor;
+}

@@ -1,9 +1,26 @@
+import {
+    useState
+} from "react"
+
+import TonalPipeline from "../TonalPipeline"
+import TonalBaseEditor from "../TonalBaseEditor"
+
+import type {
+    TonalPipelineStage
+} from "../TonalPipeline"
+
+import type {
+    TonalBaseNote
+} from "../TonalBaseEditor"
 import type {
     TonalCyclePattern
 } from "../../engine/patterns/types"
 
+import type {
+    Sample
+} from "../../engine/audio/samples"
+
 import {
-    createTonalCyclePositions,
     getFigureTraversal,
     getFigureStepCount,
     getFigureTurns,
@@ -13,6 +30,12 @@ import {
 } from "../../engine/music/tonalCycles/tonalCycle"
 
 import "./styles.css"
+
+import TonalCombinationEditor from "../TonalCombinationEditor"
+
+import type {
+    TonalCombinationSequence
+} from "../TonalCombinationEditor"
 
 
 type TonalCycleEditorProps = {
@@ -32,6 +55,8 @@ type TonalCycleEditorProps = {
             "regular" |
             "irregular"
     ) => void
+
+    
 
 
     onRegularStepChange: (
@@ -81,6 +106,38 @@ type TonalCycleEditorProps = {
     onOctaveSpanChange: (
         octaveSpan: number
     ) => void
+
+    onPlayCombinationSequence: (
+    sequence:
+        TonalCombinationSequence
+) => void
+
+activeStage:
+    TonalPipelineStage
+
+onStageChange: (
+    stage:
+        TonalPipelineStage
+) => void
+
+samples:
+    Sample[]
+
+tonalSampleId:
+    string | null
+
+onTonalSampleChange: (
+    sampleId:
+        string
+) => void
+
+baseNotes:
+    TonalBaseNote[]
+
+onBaseNotesChange: (
+    notes:
+        TonalBaseNote[]
+) => void
 }
 
 
@@ -129,6 +186,16 @@ export default function TonalCycleEditor({
     playbackProgress,
     isPlaying,
 
+    activeStage,
+    onStageChange,
+
+    samples,
+    tonalSampleId,
+    onTonalSampleChange,
+
+    baseNotes,
+    onBaseNotesChange,
+
     onFigureModeChange,
     onRegularStepChange,
     onFigureRotationChange,
@@ -140,9 +207,13 @@ export default function TonalCycleEditor({
 
     onRootChange,
     onGateChange,
-    onOctaveSpanChange
+    onOctaveSpanChange,
+
+    onPlayCombinationSequence
 
 }: TonalCycleEditorProps) {
+
+    
 
 
     const SIZE =
@@ -168,15 +239,8 @@ export default function TonalCycleEditor({
         14 posiciones
     */
 
-    const tonalPositions =
-        createTonalCyclePositions(
-            pattern.scaleIntervals.length,
-            pattern.octaveSpan
-        )
-
-
-    const totalPositions =
-        tonalPositions.length
+  const totalPositions =
+    baseNotes.length
 
 
     /*
@@ -209,14 +273,72 @@ export default function TonalCycleEditor({
             totalPositions
         )
 
+/*
+    SUB-BASE GENERADA
+    POR SELECTION
 
-    const effectiveSteps =
-        getFigureSteps(
-            selectedFigure,
-            totalPositions
+    traversal puede repetir posiciones.
+
+    Aquí nos quedamos con cada
+    posición una sola vez,
+    respetando el orden
+    en que apareció.
+*/
+const effectiveSteps =
+    getFigureSteps(
+        selectedFigure,
+        totalPositions
+    )
+const selectionIndices =
+    Array.from(
+        new Set(
+            traversal
         )
+    )
 
 
+const selectionNotes =
+    selectionIndices
+        .map(
+            index => {
+
+                const note =
+                    baseNotes[
+                        index
+                    ]
+
+
+                if (
+                    !note
+                ) {
+                    return null
+                }
+
+
+                return {
+
+                    id:
+                        note.id,
+
+                    name:
+                        note.name,
+
+                    midi:
+                        pattern.rootMidi +
+                        note.interval
+                }
+            }
+        )
+        .filter(
+            (
+                note
+            ): note is {
+                id: string
+                name: string
+                midi: number
+            } =>
+                note !== null
+        )
     /*
         ESTADÍSTICAS
     */
@@ -247,6 +369,8 @@ export default function TonalCycleEditor({
             selectedFigure,
             totalPositions
         )
+
+        
 
 
     /*
@@ -299,74 +423,55 @@ export default function TonalCycleEditor({
     */
 
     const points =
-        tonalPositions.map(
-            (
-                position,
-                index
-            ) => {
+    baseNotes.map(
+        (
+            note,
+            index
+        ) => {
 
-                const angle =
-                    -Math.PI / 2 +
-                    (
-                        index /
-                        totalPositions
-                    ) *
-                    Math.PI *
-                    2
-
-
-                const x =
-                    CENTER +
-                    Math.cos(
-                        angle
-                    ) *
-                    RADIUS
+            const angle =
+                -Math.PI / 2 +
+                (
+                    index /
+                    totalPositions
+                ) *
+                Math.PI *
+                2
 
 
-                const y =
-                    CENTER +
-                    Math.sin(
-                        angle
-                    ) *
-                    RADIUS
+            const x =
+                CENTER +
+                Math.cos(
+                    angle
+                ) *
+                RADIUS
 
 
-                const interval =
-                    pattern.scaleIntervals[
-                        position.degree
-                    ]
+            const y =
+                CENTER +
+                Math.sin(
+                    angle
+                ) *
+                RADIUS
 
 
-                const midi =
-                    pattern.rootMidi +
-                    interval +
-                    position.octaveOffset *
-                    12
+            return {
 
+                index,
 
-                return {
+                id:
+                    note.id,
 
-                    index,
+                name:
+                    note.name,
 
-                    degree:
-                        position.degree,
+                x,
 
-                    octaveOffset:
-                        position.octaveOffset,
-
-                    midi,
-
-                    name:
-                        midiToName(
-                            midi
-                        ),
-
-                    x,
-
-                    y
-                }
+                y
             }
-        )
+        }
+    )
+        
 
 
     /*
@@ -456,6 +561,71 @@ export default function TonalCycleEditor({
             className="tonal-cycle-editor"
         >
 
+       <TonalPipeline
+    activeStage={
+        activeStage
+    }
+
+    onStageChange={
+        onStageChange
+    }
+/>
+
+<div
+    className="tonal-sample-selector"
+>
+
+    <span>
+        TONAL SAMPLE
+    </span>
+
+    <select
+
+        value={
+            tonalSampleId ??
+            ""
+        }
+
+        onChange={
+            event =>
+                onTonalSampleChange(
+                    event.target.value
+                )
+        }
+    >
+
+        <option
+            value=""
+        >
+            SELECT SAMPLE
+        </option>
+
+
+        {
+            samples.map(
+                sample => (
+
+                    <option
+                        key={
+                            sample.id
+                        }
+
+                        value={
+                            sample.id
+                        }
+                    >
+                        {
+                            sample.name
+                        }
+                    </option>
+
+                )
+            )
+        }
+
+    </select>
+
+</div>
 
             {/*
                 HEADER GENERAL
@@ -564,10 +734,27 @@ export default function TonalCycleEditor({
 
             </div>
 
+        {
+            activeStage === "base" && (
 
-            <div
-                className="tonal-cycle-editor__content"
-            >
+        <TonalBaseEditor
+    notes={
+        baseNotes
+    }
+
+    onNotesChange={
+        onBaseNotesChange
+    }
+/>
+
+            )
+        }
+            {
+    activeStage === "selection" && (
+
+        <div
+            className="tonal-cycle-editor__content"
+        >
 
 
                 {/*
@@ -1479,11 +1666,34 @@ export default function TonalCycleEditor({
 
                     </div>
 
-
                 </div>
 
 
             </div>
+
+        )
+    }
+
+
+  
+
+
+{
+    activeStage ===
+    "combination" && (
+
+        <TonalCombinationEditor
+            notes={
+                selectionNotes
+            }
+
+            onPlaySequence={
+                onPlayCombinationSequence
+            }
+        />
+
+    )
+}
 
 
         </section>
